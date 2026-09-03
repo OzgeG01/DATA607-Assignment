@@ -1,0 +1,23 @@
+# Introduction
+
+For this assignment, I chose the Wine Quality dataset from the UCI Machine Learning Repository and the article "Modeling wine preferences by data mining from physicochemical properties". The dataset contains physicochemical measurements and sensory quality scores for red and white Vinho Verde wines from Portugal. I will focus on the white wine subset to explore how physicochemical properties are related to wine quality. I selected this dataset because of my background in Chemical Engineering, which gives me familiarity with many of the physicochemical variables and allows me to connect my previous knowledge with data science.
+
+Article: "Modeling wine preferences by data mining from physicochemical properties" Cortez, P., Cerdeira, A., Almeida, F., Matos, T., Reis, J. (2009)
+
+Link: <https://www.sciencedirect.com/science/article/abs/pii/S0167923609001377>
+
+# Planned Approach
+
+I will focus on the white wine subset of the Wine Quality dataset. First, I will load the dataset into R and examine its structure, variables, and data types. I will use `quality` as the target variable and select relevant physicochemical variables to create a data frame for further analysis. I will then examine how these variables may be related to wine quality and prepare the data for later analysis.
+
+# Anticipated Data Challenges
+
+The large size of the dataset and the large number of variables may be challenging for me at this stage. In addition, some variables may be related to each other, which could make the analysis more challenging.
+
+# Business Question
+
+Can physicochemical properties help explain the quality of a wine?
+
+# Data Question
+
+Which physicochemical variables are most strongly related to a wine's quality score?
