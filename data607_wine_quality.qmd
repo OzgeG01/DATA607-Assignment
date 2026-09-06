@@ -1,13 +1,8 @@
 ---
-
 title: "Wine Quality"
-
 date: "2026-09-06"
-
 author: "Ozge Gundogan"
-
 format: html
-
 ---
 
 # Introduction
