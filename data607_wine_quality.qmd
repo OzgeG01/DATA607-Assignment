@@ -1,3 +1,15 @@
+---
+
+title: "Wine Quality"
+
+date: "2026-09-06"
+
+author: "Ozge Gundogan"
+
+format: html
+
+---
+
 # Introduction
 
 For this assignment, I chose the Wine Quality dataset from the UCI Machine Learning Repository and the article "Modeling wine preferences by data mining from physicochemical properties". The dataset contains physicochemical measurements and sensory quality scores for red and white Vinho Verde wines from Portugal. I will focus on the white wine subset to explore how physicochemical properties are related to wine quality. I selected this dataset because of my background in Chemical Engineering, which gives me familiarity with many of the physicochemical variables and allows me to connect my previous knowledge with data science.
