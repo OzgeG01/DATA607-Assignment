@@ -53,6 +53,8 @@ str(white_wine_data)
 
 # Selecting Variables
 
+I selected seven variables for further analysis: alcohol, volatile acidity, citric acid, residual sugar, density, pH, and quality. These variables represent different physicochemical properties of the wine, while quality is the target variable.
+
 ```{r}
 white_wine_subset <- white_wine_data[,c("alcohol", "volatile.acidity", "citric.acid", "residual.sugar", "density", "pH", "quality")]
 
@@ -68,3 +70,9 @@ To extend the work of Cortez and colleagues, I could investigate which variables
 To verify the findings of the original study, I could apply the same statistical methods to the white wine subset and compare the results with the original study.
 
 To update the study, I could use newer wine quality data, if available, and compare the results with the original dataset. This could help determine whether the relationships between physicochemical properties and wine quality have remained consistent over time.
+
+# Citation
+
+I used ChatGPT (GPT-5.6 Luna), developed by OpenAI, to help me understand some of the functions I used in this assignment and to check my work.
+
+OpenAI. (2026). ChatGPT (GPT-5.6 Luna) \[Large language model\]. \[<https://chatgpt.com/> Accessed September 7, 2026\].
