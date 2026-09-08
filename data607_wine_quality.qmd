@@ -76,3 +76,7 @@ To update the study, I could use newer wine quality data, if available, and comp
 I used ChatGPT (GPT-5.6 Luna), developed by OpenAI, to help me understand some of the functions I used in this assignment and to check my work.
 
 OpenAI. (2026). ChatGPT (GPT-5.6 Luna) \[Large language model\]. \[<https://chatgpt.com/> Accessed September 7, 2026\].
+
+# Video Explainer
+
+Link: <https://youtu.be/x9LJ3pzY0rA>
