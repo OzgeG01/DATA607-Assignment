@@ -1,0 +1,20 @@
+---
+title: "data607_classificationmetrics"
+author: "Ozge Gundogan"
+date: "2026-09-10"
+format: html
+---
+
+# Introduction
+
+This project evaluates the performance of a binary classification model using data related to penguin sex predictions. The analysis will examine how different probability thresholds affect classification results and performance metrics.
+
+The dataset is provided by the DATA 607 course as the 'penguin_predictions.csv' file.
+
+# Planned Approach
+
+First, I will explore the dataset to examine the distribution of the actual sex classes and calculate the null error rate. Then, I will calculate predicted classes using probability thresholds of 0.2, 0.5, and 0.8 and create a confusion matrix for each threshold. Finally, I will calculate and compare accuracy, precision, recall, and F1 score to understand how different thresholds affect model performance.
+
+# Anticipated Data Challenges
+
+An anticipated challenge is creating the confusion matrix and correctly calculating the performance metrics for each probability threshold.
