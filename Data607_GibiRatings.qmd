@@ -1,0 +1,18 @@
+---
+title: "Data607_GibiRatings"
+author: "Ozge Gundogan"
+date: "2026-09-10"
+format: html
+---
+
+# Introduction
+
+This project will examine rating data for the first six episodes of the television series 'Gibi'. Ratings will be collected from at least five participants using a 1–5 scale and organized into a dataset that can be stored and analyzed using SQL and R.
+
+# Planned Approach
+
+First, rating data will be collected from at least five participants for the first six episodes of 'Gibi'. Participants will rate only the episodes they have watched. The collected data will then be stored in a PostgreSQL database using separate tables for participants, episodes, and ratings. Finally, the data will be loaded into R as a dataframe, where the number of ratings and average rating will be calculated for each episode.
+
+# Anticipated Data Challenges
+
+One anticipated challenge is ensuring that the data are transferred correctly from the SQL database into R as a dataframe. The SQL query will need to retrieve the correct participant, episode, and rating information, while missing values will need to be handled appropriately in R.
