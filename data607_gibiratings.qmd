@@ -29,25 +29,9 @@ library(rstudioapi)
 library(ggplot2)
 ```
 
-### Connect to the PostgreSQL Database
+### Create the Database Table in PostgreSQL 
 
-This section establishes a connection between R and the PostgreSQL database. The connection allows the analysis to access the stored users, episodes, and ratings data directly from R.
-
-```{r database_connection}
-#| eval: false
-con <- dbConnect(
-  RPostgres::Postgres(),
-  dbname = "DATA607",
-  host = "localhost",
-  port = 5432,
-  user = "postgres",
-  password = rstudioapi::askForPassword("Enter PostgreSQL password")
-)
-```
-
-### Create the Database Tables
-
-The database uses separate tables for users, episodes, and ratings. This structure separates the entities and allows the ratings table to connect users with the episodes they rated.
+The database tables were created in PostgreSQL using SQL. Separate tables were used for users, episodes, and ratings to organize the data and establish relationships between participants, episodes, and ratings.
 
 ``` sql
 CREATE TABLE users (
@@ -163,6 +147,24 @@ JOIN episodes e ON r.episode_id = e.episode_id
 ORDER BY e.episode_number, u.name;
 ```
 
+### Connect to the PostgreSQL Database
+
+This section establishes a connection between R and the PostgreSQL database. The connection allows the analysis to access the stored users, episodes, and ratings data directly from R.
+
+```{r database_connection}
+#| eval: false 
+con <- dbConnect(   
+  RPostgres::Postgres(),   
+  dbname = "DATA607",   
+  host = "localhost",   
+  port = 5432,   
+  user = "postgres",   
+  password = rstudioapi::askForPassword("Enter PostgreSQL password") 
+)
+```
+
+The PostgreSQL connection was used to create and retrieve the data during development. The connection code is included to show how the data were accessed, but it is not run during rendering because it requires a local database and password. The data are also saved as a CSV file on GitHub so the analysis can be reproduced without the local database.
+
 ### Load Data from PostgreSQL
 
 This section retrieves the rating data from the PostgreSQL database and loads it into R as a dataframe. The SQL query combines the users, episodes, and ratings tables using joins so that each rating is associated with the corresponding user and episode.
@@ -184,6 +186,8 @@ gibi_ratings <- dbGetQuery(
 )
 gibi_ratings
 ```
+
+The PostgreSQL query was used during development to retrieve the rating data by joining the users, episodes, and ratings tables. It is not evaluated during rendering because the local PostgreSQL database is not available in the rendering environment. The same data are loaded from the GitHub CSV file for the reproducible analysis.
 
 ### Load Data from GitHub
 
