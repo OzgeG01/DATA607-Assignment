@@ -1,18 +1,284 @@
 ---
 title: "Gibi Ratings"
 author: "Ozge Gundogan"
-date: "2026-09-10"
+date: "2026-09-13"
 format: html
 ---
 
 # Introduction
 
-This project will examine rating data for the first six episodes of the television series 'Gibi'. Ratings will be collected from at least five participants using a 1–5 scale and organized into a dataset that can be stored and analyzed using SQL and R.
+This project will examine rating data for the first six episodes of the television series "Gibi". Ratings will be collected from five users using a 1-5 scale and organized into a dataset that can be stored and analyzed using SQL and R.
 
 # Planned Approach
 
-First, rating data will be collected from at least five participants for the first six episodes of 'Gibi'. Participants will rate only the episodes they have watched. The collected data will then be stored in a PostgreSQL database using separate tables for participants, episodes, and ratings. Finally, the data will be loaded into R as a dataframe, where the number of ratings and average rating will be calculated for each episode.
+First, rating data will be collected from five users for the first six episodes of "Gibi". Users will rate only the episodes they have watched. If a user has not watched an episode, the rating will be recorded as "NULL" in the SQL database. The collected data will then be stored in a PostgreSQL database using separate tables for users, episodes, and ratings. Finally, the data will be loaded into R as a dataframe, where the number of ratings and average rating will be calculated for each episode. Missing ratings will be excluded from the average-rating calculations.
 
 # Anticipated Data Challenges
 
-One anticipated challenge is ensuring that the data are transferred correctly from the SQL database into R as a dataframe. The SQL query will need to retrieve the correct participant, episode, and rating information, while missing values will need to be handled appropriately in R.
+One anticipated challenge is ensuring that the data are transferred correctly from the SQL database into R as a dataframe. The SQL query will need to retrieve the correct user, episode, and rating information, while missing values will need to be handled appropriately in R.
+
+### Load Required Packages
+
+The analysis will use "DBI" and "RPostgres" to connect R to the PostgreSQL database. The "dplyr" package will be used to inspect and summarize the data after it is loaded into R.
+
+```{r required_packages}
+library(DBI)
+library(RPostgres)
+library(dplyr)
+library(rstudioapi)
+library(ggplot2)
+```
+
+### Connect to the PostgreSQL Database
+
+This section establishes a connection between R and the PostgreSQL database. The connection allows the analysis to access the stored users, episodes, and ratings data directly from R.
+
+```{r database_connection}
+#| eval: false
+con <- dbConnect(
+  RPostgres::Postgres(),
+  dbname = "DATA607",
+  host = "localhost",
+  port = 5432,
+  user = "postgres",
+  password = rstudioapi::askForPassword("Enter PostgreSQL password")
+)
+```
+
+### Create the Database Tables
+
+The database uses separate tables for users, episodes, and ratings. This structure separates the entities and allows the ratings table to connect users with the episodes they rated.
+
+``` sql
+CREATE TABLE users (
+    user_id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL
+);
+```
+
+``` sql
+CREATE TABLE episodes (
+    episode_id SERIAL PRIMARY KEY,
+    episode_number INTEGER NOT NULL,
+    title VARCHAR(100) NOT NULL
+);
+```
+
+``` sql
+CREATE TABLE ratings (
+    rating_id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(user_id),
+    episode_id INTEGER NOT NULL REFERENCES episodes(episode_id),
+    rating INTEGER CHECK (rating >= 1 AND rating <= 5)
+);
+```
+
+``` sql
+INSERT INTO users (name)
+VALUES
+    ('Serpil'),
+    ('Koray'),
+    ('Okan'),
+    ('Deniz'),
+    ('Pelin');
+```
+
+``` sql
+SELECT * FROM users;
+```
+
+``` sql
+INSERT INTO episodes (episode_number, title)
+VALUES
+    (1, 'Kokaric'),
+    (2, 'Vatka'),
+    (3, 'Nu Model'),
+    (4, 'Erasmusla GY'),
+    (5, 'Yanlis Mentor'),
+    (6, 'Karanlik Guc');
+```
+
+``` sql
+SELECT * FROM episodes;
+```
+
+``` sql
+INSERT INTO ratings (user_id, episode_id, rating)
+VALUES
+    (1, 1, 5),
+    (1, 2, 4),
+    (1, 3, 4),
+    (1, 4, 5),
+    (1, 5, NULL),
+    (1, 6, 5),
+
+    (2, 1, 5),
+    (2, 2, 5),
+    (2, 3, 4),
+    (2, 4, 5),
+    (2, 5, 3),
+    (2, 6, 5),
+
+    (3, 1, 5),
+    (3, 2, 4),
+    (3, 3, NULL),
+    (3, 4, 5),
+    (3, 5, 3),
+    (3, 6, 5),
+
+    (4, 1, 5),
+    (4, 2, 4),
+    (4, 3, NULL),
+    (4, 4, 5),
+    (4, 5, NULL),
+    (4, 6, 4),
+
+    (5, 1, 4),
+    (5, 2, 5),
+    (5, 3, 4),
+    (5, 4, 5),
+    (5, 5, 3),
+    (5, 6, 5);
+```
+
+``` sql
+SELECT * FROM ratings;
+```
+
+``` sql
+SELECT *
+FROM ratings
+WHERE rating IS NULL;
+```
+
+``` sql
+SELECT
+    u.name, 
+    e.episode_number,
+    e.title,
+    r.rating
+FROM ratings r
+JOIN users u ON r.user_id = u.user_id
+JOIN episodes e ON r.episode_id = e.episode_id
+ORDER BY e.episode_number, u.name;
+```
+
+### Load Data from PostgreSQL
+
+This section retrieves the rating data from the PostgreSQL database and loads it into R as a dataframe. The SQL query combines the users, episodes, and ratings tables using joins so that each rating is associated with the corresponding user and episode.
+
+```{r load_from_postgresql}
+#| eval: false
+gibi_ratings <- dbGetQuery(
+  con, "
+  select
+    u.name,
+    e.episode_number,
+    e.title,
+    r.rating
+  from ratings r
+  join users u on r.user_id = u.user_id
+  join episodes e on r.episode_id = e.episode_id
+  order by e.episode_number, u.name;
+  "
+)
+gibi_ratings
+```
+
+### Load Data from GitHub
+
+The rating data are also available as a CSV file in the GitHub repository. This allows the analysis to be reproduced without requiring access to the local PostgreSQL database.
+
+```{r load_from_github}
+gibi_ratings <- read.csv("https://raw.githubusercontent.com/OzgeG01/DATA607-Assignment/refs/heads/main/gibi_ratings.csv")
+gibi_ratings
+```
+
+### Inspect the Data Structure
+
+This section checks the structure of the dataframe to confirm the number of observations and variables and to verify that the data were imported with the expected data types.
+
+```{r}
+str(gibi_ratings)
+```
+
+### Check for Missing Data
+
+This section checks the dataframe for missing rating values. Missing ratings represent episodes that a participant did not rate, so they are excluded when calculating rating counts and average ratings.
+
+```{r missing_count}
+sum(is.na(gibi_ratings$rating))
+```
+
+```{r missing_data}
+missing_data <- gibi_ratings %>% 
+  filter(is.na(rating))
+
+missing_data
+```
+
+### Ratings per User
+
+This section counts the number of valid ratings provided by each user. Missing ratings are excluded from the count because they represent episodes that a user did not rate.
+
+```{r ratings_per_user}
+ratings_per_user <- gibi_ratings %>%
+  group_by(name) %>%
+  summarise(
+    number_of_ratings = sum(!is.na(rating)),
+    .groups = "drop"
+  )
+ratings_per_user
+```
+
+### Ratings per Episode
+
+This section counts the number of valid ratings received by each episode. Missing ratings are excluded from the count.
+
+```{r ratings_per_episode}
+ratings_per_episode <- gibi_ratings %>%
+  group_by(episode_number, title) %>%
+  summarise(
+    number_of_ratings = sum(!is.na(rating)),
+    .groups = "drop"
+  )
+ratings_per_episode
+```
+
+### Average Ratings
+
+This section calculates the average rating for each episode. Missing ratings are excluded from the calculation.
+
+```{r average_ratings}
+average_ratings <- gibi_ratings %>%
+  group_by(episode_number, title) %>%
+  summarise(
+    average_rating = mean(rating, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  arrange(desc(average_rating))
+average_ratings
+```
+
+The average ratings can be compared using the following bar chart.
+
+```{r average_rating_plot}
+ggplot(average_ratings, aes(x = reorder(title, average_rating),
+                            y = average_rating)) + 
+  geom_col() +
+  coord_flip() + 
+  labs(
+    title = "Average Ratings by Gibi Episode",
+    x = "Episode",
+    y = "Average Rating"
+  ) + 
+  theme_minimal()
+```
+
+# Conclusions
+
+The analysis successfully loaded the "Gibi" episode ratings from PostgreSQL into R and summarized the available ratings by participant and episode. Missing ratings were identified and excluded from the rating counts and average rating calculations.
+
+The results show that "Erasmusla GY" received the highest average rating of 5.0, while "Yanlis Mentor" received the lowest average rating of 3.0. "Kokaric" and "Karanlik Guc" both received an average rating of 4.8, followed by "Vatka" with 4.4 and "Nu Model" with 4.0.
+
+As a recommendation, the analysis could be extended by collecting ratings from more participants to make the results more representative. Future analysis could also compare individual participant preferences and examine whether the episode rankings change as additional ratings are collected.
