@@ -371,3 +371,13 @@ A 0.8 threshold may be preferable in a situation where false positive prediction
 The results show that changing the probability threshold affects the classification model's performance. The 0.2 threshold produced the highest recall (0.9487), which means it identified the largest proportion of actual female cases. The 0.8 threshold produced the highest precision (0.9474) and accuracy (0.9462), indicating more precise positive predictions and better overall classification performance. The 0.5 threshold provided a more balanced result, with precision and recall both equal to 0.9231.
 
 Overall, there is no single best threshold for every situation. A lower threshold can be useful when reducing false negatives is more important, while a higher threshold can be useful when reducing false positives and improving the precision of positive predictions is more important. Therefore, the appropriate threshold should be selected based on the goals and consequences of the classification problem.
+
+# Citation
+
+I used ChatGPT (GPT-5.6 Luna), developed by OpenAI, to help me understand some of the functions I used in this assignment and to check my work.
+
+OpenAI. (2026). ChatGPT (GPT-5.6 Luna) \[Large language model\]. \[<https://chatgpt.com/> Accessed September 7, 2026\].
+
+# Video Explainer
+
+Link: <https://youtu.be/Tci8wWbAoBg>
