@@ -29,7 +29,7 @@ library(rstudioapi)
 library(ggplot2)
 ```
 
-### Create the Database Table in PostgreSQL 
+### Create the Database Table in PostgreSQL
 
 The database tables were created in PostgreSQL using SQL. Separate tables were used for users, episodes, and ratings to organize the data and establish relationships between participants, episodes, and ratings.
 
@@ -286,3 +286,13 @@ The analysis successfully loaded the "Gibi" episode ratings from PostgreSQL into
 The results show that "Erasmusla GY" received the highest average rating of 5.0, while "Yanlis Mentor" received the lowest average rating of 3.0. "Kokaric" and "Karanlik Guc" both received an average rating of 4.8, followed by "Vatka" with 4.4 and "Nu Model" with 4.0.
 
 As a recommendation, the analysis could be extended by collecting ratings from more participants to make the results more representative. Future analysis could also compare individual participant preferences and examine whether the episode rankings change as additional ratings are collected.
+
+# Citation
+
+I used ChatGPT (GPT-5.6 Luna), developed by OpenAI, to help me understand some of the functions I used in this assignment and to check my work.
+
+OpenAI. (2026). ChatGPT (GPT-5.6 Luna) \[Large language model\]. \[<https://chatgpt.com/> Accessed September 7, 2026\].
+
+# Video Explainer
+
+Link: <https://youtu.be/0WnfbdUZ-64>
