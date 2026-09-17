@@ -1,0 +1,18 @@
+---
+title: "Window Functions"
+author: "Ozge Gundogan"
+date: "09.17.2026"
+format: html
+---
+
+# Introduction
+
+For this assignment, I will analyze daily closing stock prices for Apple (AAPL), Microsoft (MSFT), and Amazon (AMZN) starting from January 1, 2022. The goal of the analysis is to use window functions to examine how the average closing prices of these stocks change over time.
+
+# Planned Approach
+
+I will use daily closing price data obtained from Yahoo Finance and stored as a CSV file in my GitHub repository. I plan to organize the data by stock and date, then use window functions to calculate the year-to-date average and the six-day moving average for each stock. The year-to-date average will be calculated separately for each year, while the six-day moving average will use the current trading day and the previous five trading days.
+
+# Anticipated Data Challenges
+
+One anticipated challenge is ensuring that the stock price data are imported correctly from the CSV file, particularly making sure that the date, stock symbol, and closing price columns are read with the appropriate data types in R.
