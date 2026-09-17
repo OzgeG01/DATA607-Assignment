@@ -1,0 +1,18 @@
+---
+title: "Global Baseline Estimate"
+author: "Ozge Gundogan"
+date: "09.16.2026"
+format: html
+---
+
+# Introduction
+
+This project will use rating data collected from five users for the first six episodes of the television series "Gibi". The goal is to build a Global Baseline Estimate recommendation system that can estimate missing ratings and use these estimates to make recommendations.
+
+# Planned Approach
+
+I plan to first examine the rating data and identify the ratings that are missing. I will calculate the overall average rating, the average rating for each user, and the average rating for each episode. I will then use these values to calculate user and episode biases and apply the Global Baseline Estimate formula to predict the missing ratings. Finally, I will compare the predicted ratings and recommend the episode with the highest estimated rating for each user.
+
+# Anticipated Data Challenges
+
+One anticipated challenge is handling missing ratings correctly because they represent episodes that a user did not rate and should not be included when calculating averages. Another challenge is making sure that each user bias and episode bias is matched with the correct missing rating when calculating the predictions. I will also need to make sure that the data can be accessed from an online source so that the analysis is reproducible.
