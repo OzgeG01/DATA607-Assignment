@@ -1,7 +1,7 @@
 ---
 title: "Window Functions"
 author: "Ozge Gundogan"
-date: "09.17.2026"
+date: "09.20.2026"
 format: html
 ---
 
@@ -16,3 +16,115 @@ I will use daily closing price data obtained from Yahoo Finance and stored as a 
 # Anticipated Data Challenges
 
 One anticipated challenge is ensuring that the stock price data are imported correctly from the CSV file, particularly making sure that the date, stock symbol, and closing price columns are read with the appropriate data types in R.
+
+### Load Packages
+
+The following packages are loaded for data manipulation and rolling calculations.
+
+```{r}
+library(dplyr)
+library(slider)
+```
+
+### Load the Dataset
+
+The stock price dataset is loaded directly from GitHub. It contains daily closing prices for multiple stocks over time.
+
+```{r}
+stock_prices <- read.csv(
+  "https://raw.githubusercontent.com/OzgeG01/DATA607-Assignment/refs/heads/main/stock_prices.csv"
+)
+
+head(stock_prices)
+```
+
+### Prepare the Data
+
+The date variable is converted to Date format so that the observations can be correctly ordered over time. The stock symbols included in the dataset are also identified.
+
+```{r}
+stock_prices <- stock_prices %>%
+  mutate(date = as.Date(date))
+
+unique(stock_prices$symbol)
+```
+
+### Explore the Dataset
+
+Before calculating the window functions, the dataset is examined to identify the available stocks, the number of observations, and the date range.
+
+```{r}
+stock_prices %>%
+  summarise(
+    number_of_rows = n(),
+    number_of_stocks = n_distinct(symbol),
+    start_date = min(date),
+    end_date = max(date)
+  )
+```
+
+### Year-to-Date Average
+
+The year-to-date (YTD) average represents the average closing price for each stock from the beginning of the year through the current observation date. The data are grouped by stock symbol and year so that the calculation restarts at the beginning of each year.
+
+```{r}
+stock_prices <- stock_prices %>%
+  mutate(year = format(date, "%Y"))
+```
+
+```{r}
+stock_prices <- stock_prices %>%
+  arrange(symbol, date) %>%
+  group_by(symbol, year) %>%
+  mutate(
+    ytd_average = cummean(close)
+  ) %>%
+  ungroup()
+
+head(stock_prices, 10)
+```
+
+### Six-Day Moving Average
+
+The six-day moving average represents the average closing price of each stock over the current trading day and the previous five trading days. The calculation is performed separately for each stock and follows the chronological order of the observations.
+
+```{r}
+stock_prices <- stock_prices %>%
+  arrange(symbol, date) %>%
+  group_by(symbol) %>%
+  mutate(
+    six_day_average = slide_dbl(
+      close,
+      mean,
+      .before = 5,
+      .complete = TRUE
+    )
+  ) %>%
+  ungroup()
+
+head(stock_prices, 10)
+```
+
+### View the Results
+
+The following table displays the closing price, year-to-date average, and six-day moving average for the first observations in the dataset. This allows the two window calculations to be compared with the original daily closing prices.
+
+```{r}
+stock_prices %>%
+  select(date, symbol, close, ytd_average, six_day_average) %>%
+  head(15)
+```
+
+# Conclusion
+
+The year-to-date average and six-day moving average were calculated separately for each stock. The year-to-date average shows the average closing price from the beginning of each year through each observation date, while the six-day moving average shows the average closing price over the most recent six trading days.
+
+# Citation
+
+I used ChatGPT (GPT-5.6 Luna), developed by OpenAI, to help me understand some of the functions I used in this assignment and to check my work.
+
+OpenAI. (2026). ChatGPT (GPT-5.6 Luna) \[Large language model\]. \[<https://chatgpt.com/> Accessed September 7, 2026\].
+
+# Video Explainer
+
+Link:
