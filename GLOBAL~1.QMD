@@ -1,7 +1,7 @@
 ---
 title: "Global Baseline Estimate"
 author: "Ozge Gundogan"
-date: "09.16.2026"
+date: "09.20.2026"
 format: html
 ---
 
@@ -16,3 +16,145 @@ I plan to first examine the rating data and identify the ratings that are missin
 # Anticipated Data Challenges
 
 One anticipated challenge is handling missing ratings correctly because they represent episodes that a user did not rate and should not be included when calculating averages. Another challenge is making sure that each user bias and episode bias is matched with the correct missing rating when calculating the predictions. I will also need to make sure that the data can be accessed from an online source so that the analysis is reproducible.
+
+# Code Base
+
+### Load R Packages
+
+This section loads the R packages required for data manipulation and analysis.
+
+```{r}
+library(dplyr)
+```
+
+### Load Data
+
+This section loads the rating data collected in the previous assignment. Missing ratings are treated as "NA" values because they represent episodes that a user did not rate.
+
+```{r}
+gibi_ratings <- read.csv(
+  "https://raw.githubusercontent.com/OzgeG01/DATA607-Assignment/refs/heads/main/gibi_ratings.csv",
+  na.strings = c("", "NA")
+)
+
+gibi_ratings
+```
+
+### Global Mean
+
+This section calculates the global mean of all available ratings. Missing ratings are excluded from the calculation. The global mean represents the overall average rating across all users and episodes.
+
+```{r}
+global_mean <- mean(gibi_ratings$rating, na.rm = TRUE)
+
+global_mean
+```
+
+### User Bias
+
+This section calculates the average rating for each user and their user bias. The user bias measures how much a user's average rating differs from the global mean.
+
+```{r}
+user_bias <- gibi_ratings %>%
+  group_by(name) %>%
+  summarise(
+    user_mean = mean(rating, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    user_bias = user_mean - global_mean
+  )
+
+user_bias
+```
+
+### Episode Bias
+
+This section calculates the average rating for each episode and its episode bias. The episode bias measures how much an episode's average rating differs from the global mean.
+
+```{r}
+episode_bias <- gibi_ratings %>%
+  group_by(episode_number, title) %>%
+  summarise(
+    episode_mean = mean(rating, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    episode_bias = episode_mean - global_mean
+  )
+
+episode_bias
+```
+
+### Missing Ratings
+
+This section identifies the user and episode combinations with missing ratings. These missing values represent episodes that a user did not rate and will be estimated using the Global Baseline Estimate algorithm.
+
+```{r}
+missing_ratings <- gibi_ratings %>%
+  filter(is.na(rating))
+
+missing_ratings
+```
+
+### Add User and Episode Biases
+
+This section combines the missing ratings with the corresponding user and episode bias values. These bias values will be used to calculate the Global Baseline Estimate for each missing rating.
+
+```{r}
+missing_ratings_with_bias <- missing_ratings %>%
+  left_join(user_bias, by = "name") %>%
+  left_join(
+    episode_bias,
+    by = c("episode_number", "title")
+  )
+
+missing_ratings_with_bias
+```
+
+### Global Baseline Estimates
+
+This section calculates the Global Baseline Estimate for each missing rating. The estimate is calculated by adding the global mean, the user's bias, and the episode's bias.
+
+```{r}
+baseline_estimates <- missing_ratings_with_bias %>%
+  mutate(
+    predicted_rating = global_mean + user_bias + episode_bias
+  )
+
+baseline_estimates
+```
+
+### Recommendation
+
+This section selects the episode with the highest predicted rating for each user. The episode with the highest Global Baseline Estimate among the user's missing ratings is recommended to that user.
+
+```{r}
+recommendations <- baseline_estimates %>%
+  group_by(name) %>%
+  slice_max(
+    order_by = predicted_rating,
+    n = 1,
+    with_ties = FALSE
+  ) %>%
+  ungroup() %>%
+  select(name, episode_number, title, predicted_rating)
+
+recommendations
+```
+
+# Conclusion
+
+The Global Baseline Estimate algorithm was used to predict the four missing ratings in the dataset. The predicted ratings were 4.04 for Deniz on "Nu Model", 3.94 for Okan on "Nu Model", 3.04 for Deniz on "Yanlis Mentor", and 3.14 for Serpil on "Yanlis Mentor". These estimates reflect both each user's general rating behavior and each episode's overall rating relative to the global mean.
+
+Based on the predicted ratings, "Nu Model" was recommended to Deniz and Okan, while "Yanlis Mentor" was recommended to Serpil. For users with more than one missing rating, the episode with the highest predicted rating was selected as the recommendation.
+
+# Citation
+
+I used ChatGPT (GPT-5.6 Luna), developed by OpenAI, to help me understand some of the functions I used in this assignment and to check my work.
+
+OpenAI. (2026). ChatGPT (GPT-5.6 Luna) \[Large language model\]. \[<https://chatgpt.com/> Accessed September 20, 2026\].
+
+# Video Explainer
+
+Link:
