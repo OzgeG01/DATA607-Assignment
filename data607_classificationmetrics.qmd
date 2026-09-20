@@ -144,8 +144,8 @@ The four confusion matrix components are organized into a table to show how the 
 
 ```{r}
 confusion_02 <- matrix(
-  c(TN_02, FP_02,
-    FN_02, TP_02),
+  c(TN_02, FN_02,
+    FP_02, TP_02),
   nrow = 2,
   byrow = TRUE
 )
@@ -202,8 +202,8 @@ The four confusion matrix components are organized into a table to show how the 
 
 ```{r}
 confusion_05 <- matrix(   
-  c(TN_05, FP_05,     
-    FN_05, TP_05),   
+  c(TN_05, FN_05,     
+    FP_05, TP_05),   
   nrow = 2,   
   byrow = TRUE 
 )  
@@ -258,8 +258,8 @@ The four confusion matrix components are organized into a table to show how the 
 
 ```{r}
 confusion_08 <- matrix(   
-  c(TN_08, FP_08,     
-    FN_08, TP_08),   
+  c(TN_08, FN_08,     
+    FP_08, TP_08),   
   nrow = 2,   
   byrow = TRUE )  
 
