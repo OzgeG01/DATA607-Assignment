@@ -19,6 +19,8 @@ First, I will explore the dataset to examine the distribution of the actual sex 
 
 An anticipated challenge is creating the confusion matrix and correctly calculating the performance metrics for each probability threshold.
 
+# Code Base
+
 ### Load the Required R Package
 
 ```{r}
@@ -376,7 +378,7 @@ Overall, there is no single best threshold for every situation. A lower threshol
 
 I used ChatGPT (GPT-5.6 Luna), developed by OpenAI, to help me understand some of the functions I used in this assignment and to check my work.
 
-OpenAI. (2026). ChatGPT (GPT-5.6 Luna) \[Large language model\]. \[<https://chatgpt.com/> Accessed September 7, 2026\].
+OpenAI. (2026). ChatGPT (GPT-5.6 Luna) \[Large language model\]. \[<https://chatgpt.com/> Accessed September 10, 2026\].
 
 # Video Explainer
 
