@@ -17,6 +17,8 @@ First, rating data will be collected from five users for the first six episodes 
 
 One anticipated challenge is ensuring that the data are transferred correctly from the SQL database into R as a dataframe. The SQL query will need to retrieve the correct user, episode, and rating information, while missing values will need to be handled appropriately in R.
 
+# Code Base
+
 ### Load Required Packages
 
 The analysis will use "DBI" and "RPostgres" to connect R to the PostgreSQL database. The "dplyr" package will be used to inspect and summarize the data after it is loaded into R.
@@ -291,7 +293,7 @@ As a recommendation, the analysis could be extended by collecting ratings from m
 
 I used ChatGPT (GPT-5.6 Luna), developed by OpenAI, to help me understand some of the functions I used in this assignment and to check my work.
 
-OpenAI. (2026). ChatGPT (GPT-5.6 Luna) \[Large language model\]. \[<https://chatgpt.com/> Accessed September 7, 2026\].
+OpenAI. (2026). ChatGPT (GPT-5.6 Luna) \[Large language model\]. \[<https://chatgpt.com/> Accessed September 13, 2026\].
 
 # Video Explainer
 
