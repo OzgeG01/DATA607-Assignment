@@ -1,6 +1,6 @@
 ---
 title: "Wine Quality"
-date: "2026-09-06"
+date: "2026-09-07"
 author: "Ozge Gundogan"
 format: html
 ---
@@ -29,7 +29,9 @@ Can physicochemical properties help explain the quality of a wine?
 
 Which physicochemical variables are most strongly related to a wine's quality score?
 
-# Loading The Data
+# Code Base
+
+### Loading The Data
 
 I loaded the white wine dataset directly from GitHub using its URL so that the analysis can be reproduced on another computer.
 
@@ -41,7 +43,7 @@ white_wine_data <- read.csv(url,sep=";")
 head(white_wine_data)
 ```
 
-# Exploring The Data
+### Exploring The Data
 
 I examined the dimensions, column names, and structure of the dataset to better understand its size, variables, and data types before creating the final subset.
 
@@ -51,7 +53,7 @@ names(white_wine_data)
 str(white_wine_data)
 ```
 
-# Selecting Variables
+### Selecting Variables
 
 I selected seven variables for further analysis: alcohol, volatile acidity, citric acid, residual sugar, density, pH, and quality. These variables represent different physicochemical properties of the wine, while quality is the target variable.
 
