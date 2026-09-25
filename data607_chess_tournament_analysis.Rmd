@@ -1,0 +1,20 @@
+---
+title: "Chess Tournament Analysis"
+author: "Ozge Gundogan"
+date: "2026-09-25"
+output: html_document
+---
+
+# Introduction
+
+This project analyzes chess tournament data provided in a structured text file. The goal is to extract each player's name, state, total points, and pre-tournament rating, and then calculate the average pre-tournament rating of each player's opponents. The final results will be exported as a CSV file.
+
+# Planned Approach
+
+First, I will read the tournament text file directly from GitHub to ensure that the data are accessible when the code is run on another computer. Then, I will identify the rows containing the main player records and player details. I will extract the required information, including player name, state, total points, and pre-tournament rating. I will also extract opponent numbers only from games that were actually played (W, L, or D) and exclude rounds without an actual opponent, such as byes.
+
+I will then use the opponent numbers to identify their corresponding pre-tournament ratings and calculate the average opponent pre-rating for each player. Finally, I will combine the extracted and calculated information into a single data frame and export the final results as a CSV file.
+
+# Anticipated Challenges
+
+One anticipated challenge is extracting the required information from the structured text file because each player's information is spread across multiple lines and is not stored in a standard tabular format. Another challenge is identifying which rounds represent games that were actually played. Only wins (W), losses (L), and draws (D) should be included when calculating the average opponent pre-rating, while unplayed rounds such as byes should be excluded.
