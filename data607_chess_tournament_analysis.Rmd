@@ -18,3 +18,201 @@ I will then use the opponent numbers to identify their corresponding pre-tournam
 # Anticipated Challenges
 
 One anticipated challenge is extracting the required information from the structured text file because each player's information is spread across multiple lines and is not stored in a standard tabular format. Another challenge is identifying which rounds represent games that were actually played. Only wins (W), losses (L), and draws (D) should be included when calculating the average opponent pre-rating, while unplayed rounds such as byes should be excluded.
+
+# Code Base
+
+### Load the Data
+
+The tournament data are stored in a text file available through GitHub. The file is read directly from the GitHub raw URL so that the data remain accessible when the code is run on another computer.
+
+```{r load_data}
+#| warning: false
+data_url <- "https://raw.githubusercontent.com/OzgeG01/DATA607-Assignment/refs/heads/main/tournamentinfo.txt"
+
+tournament_data <- readLines(data_url)
+
+head(tournament_data, 10)
+```
+
+### Identify Player Rows
+
+Each player's main record begins with a player number followed by a vertical bar. These rows contain the player's name, total points, and round-by-round opponent information.
+
+```{r player_rows}
+player_rows <- grep("^\\s*\\d+\\s*\\|", tournament_data, value = TRUE)
+
+head(player_rows)
+```
+
+### Extract Player Numbers
+
+The player number is extracted from the first field of each main player row. These numbers will be used to match each opponent with the corresponding player's pre-tournament rating.
+
+```{r player_numbers}
+player_numbers <- as.numeric(
+  trimws(sapply(strsplit(player_rows, "\\|"), `[`, 1))
+)
+
+head(player_numbers)
+```
+
+### Identify Player Detail Rows
+
+The second line of each player record contains the player's state and rating information. These rows begin with a two-letter state abbreviation followed by a vertical bar.
+
+```{r detail_rows}
+detail_rows <- grep("^\\s*[A-Z]{2}\\s*\\|", tournament_data, value = TRUE)
+
+head(detail_rows)
+```
+
+### Extract Player Names
+
+The player name is extracted from each main player row by splitting the row at the vertical bar. The second field contains the player's name, and trimws() is used to remove any extra spaces.
+
+```{r extract_names}
+player_names <- trimws(
+  sapply(strsplit(player_rows, "\\|"), `[`, 2)
+)
+
+head(player_names)
+```
+
+### Extract Total Points
+
+The total number of points for each player is stored in the third field of the main player row. The rows are split using the vertical bar as the delimiter, and the extracted values are converted to numeric format.
+
+```{r extract_points}
+total_points <- as.numeric(
+  trimws(sapply(strsplit(player_rows, "\\|"), `[`, 3))
+)
+
+head(total_points)
+```
+
+### Extract Player State
+
+The player's state is stored in the first field of the detail row. The detail rows are split using the vertical bar as the delimiter, and extra whitespace is removed from the extracted state values.
+
+```{r extract_state}
+player_states <- trimws(
+  sapply(strsplit(detail_rows, "\\|"), `[`, 1)
+)
+
+head(player_states)
+```
+
+### Extract Pre-Tournament Rating
+
+The player's pre-tournament rating appears in the detail row immediately after R:. A regular expression is used to extract this value, and the result is converted to numeric format.
+
+```{r extract_prerating}
+pre_ratings <- as.numeric(
+  sub(".*R:\\s*(\\d+).*", "\\1", detail_rows)
+)
+
+head(pre_ratings)
+```
+
+### Extract Opponent Numbers
+
+The round information begins with the fourth field of each main player row. First, the round fields are separated from the rest of the player information. Only games recorded as wins (W), losses (L), or draws (D) are included. Byes and other unplayed rounds are excluded.
+
+```{r extract_opponents}
+round_fields <- lapply(
+  strsplit(player_rows, "\\|"),
+  function(x) trimws(x[4:length(x)])
+)
+
+opponent_numbers <- lapply(round_fields, function(rounds) {
+  played_games <- rounds[grepl("^[WLD]\\s+\\d+$", rounds)]
+  as.numeric(sub("^[WLD]\\s+", "", played_games))
+})
+
+head(opponent_numbers)
+```
+
+### Calculate Average Opponent Pre-Rating
+
+The opponent numbers are used to identify the corresponding pre-tournament ratings. For each player, the average pre-tournament rating of the opponents actually played is calculated and rounded to the nearest whole number.
+
+```{r calculate_opponent_average}
+avg_opponent_rating <- sapply(opponent_numbers, function(opponents) {
+  opponent_ratings <- pre_ratings[match(opponents, player_numbers)]
+  mean(opponent_ratings, na.rm = TRUE)
+})
+
+avg_opponent_rating <- round(avg_opponent_rating)
+
+head(avg_opponent_rating)
+```
+
+### Verify the First Player
+
+The first player, Gary Hua, can be used to verify the opponent rating calculation. His opponents' pre-tournament ratings are used to calculate his average opponent pre-rating.
+
+```{r verify_first_player}
+player_names[1]
+
+opponent_numbers[[1]]
+
+pre_ratings[match(opponent_numbers[[1]], player_numbers)]
+
+avg_opponent_rating[1]
+```
+
+### Verify a Player with Byes
+
+Player 37 includes unplayed rounds such as a bye and a half-point bye. This check confirms that only actual games (W, L or D) are included in the opponent calculation.
+
+```{r verify_byes}
+player_rows[37]
+
+opponent_numbers[[37]]
+
+avg_opponent_rating[37]
+```
+
+### Create the Final Data Frame
+
+The extracted and calculated information is combined into a single data frame containing the five fields required for the project.
+
+```{r create_final_dataframe}
+chess_results <- data.frame(
+  Player_Name = player_names,
+  State = player_states,
+  Total_Points = total_points,
+  Pre_Rating = pre_ratings,
+  Avg_Opponent_Pre_Rating = avg_opponent_rating
+)
+
+head(chess_results)
+```
+
+### Export the Results
+
+The final data frame is exported as a CSV file so that the cleaned tournament data can be easily imported into other applications, such as a SQL database. Row names are excluded from the exported file.
+
+```{r export_csv}
+write.csv(
+  chess_results,
+  "chess_tournament_results.csv",
+  row.names = FALSE
+)
+```
+
+# Conclusion
+
+In this project, I transformed structured chess tournament text data into a clean data frame containing the required information for all players. I extracted each player's name, state, total points, and pre-tournament rating, identified the opponents they actually played, and calculated the average pre-tournament rating of those opponents.
+
+Rounds without an actual opponent, such as byes, were excluded from the opponent rating calculations. The final dataset was exported as a CSV file for potential use in a database or further analysis.
+
+# Citation
+
+I used ChatGPT (GPT-5.6 Luna), developed by OpenAI, to help me understand some of the functions I used in this assignment and to check my work.
+
+OpenAI. (2026). ChatGPT (GPT-5.6 Luna) [Large language model]. [<https://chatgpt.com/> Accessed September 26, 2026].
+
+# Video Explainer
+
+Link:
