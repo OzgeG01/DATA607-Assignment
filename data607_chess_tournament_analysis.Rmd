@@ -56,16 +56,6 @@ player_numbers <- as.numeric(
 head(player_numbers)
 ```
 
-### Identify Player Detail Rows
-
-The second line of each player record contains the player's state and rating information. These rows begin with a two-letter state abbreviation followed by a vertical bar.
-
-```{r detail_rows}
-detail_rows <- grep("^\\s*[A-Z]{2}\\s*\\|", tournament_data, value = TRUE)
-
-head(detail_rows)
-```
-
 ### Extract Player Names
 
 The player name is extracted from each main player row by splitting the row at the vertical bar. The second field contains the player's name, and trimws() is used to remove any extra spaces.
@@ -88,6 +78,16 @@ total_points <- as.numeric(
 )
 
 head(total_points)
+```
+
+### Identify Player Detail Rows
+
+The second line of each player record contains the player's state and rating information. These rows begin with a two-letter state abbreviation followed by a vertical bar.
+
+```{r detail_rows}
+detail_rows <- grep("^\\s*[A-Z]{2}\\s*\\|", tournament_data, value = TRUE)  
+
+head(detail_rows)
 ```
 
 ### Extract Player State
