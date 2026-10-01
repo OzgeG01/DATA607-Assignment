@@ -1,0 +1,20 @@
+---
+title: "Airline Delays Analysis"
+author: "Ozge Gundogan"
+date: "2026-10-01"
+output: html_document
+---
+
+# Introduction
+
+This assignment analyzes arrival delay data for Alaska Airlines and AM West across five cities: Los Angeles, Phoenix, San Diego, San Francisco, and Seattle. The goal is to tidy and transform the original data and compare the arrival delay percentages of the two airlines both overall and across the five cities.
+
+# Planned Approach
+
+First, I will read the airline delay data from a CSV file stored in my GitHub repository into R. I will clean the data by assigning names to the unlabeled columns, removing the empty row, and filling in the missing airline names. Then, I will transform the dataset from wide format to long format.
+
+After tidying the data, I will calculate the overall delay percentage for each airline and compare the results using a table and a bar chart. I will also calculate the delay percentages for the two airlines in each of the five cities and compare them using a table and a bar chart. Finally, I will compare the overall results with the city-by-city results and explain the reasons for any differences between them.
+
+# Anticipated Data Challenges
+
+In the original table, the airline name is shown only once for each group, so the airline names are missing in the delayed rows. These missing values will need to be filled before the data are transformed.
