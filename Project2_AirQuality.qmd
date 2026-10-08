@@ -1,0 +1,37 @@
+---
+title: "Project 2 - Air Quality"
+author: "Ozge Gundogan"
+date: 7.10.2026
+format:
+  html:
+    toc: true
+    code-fold: true
+    theme: flatly
+execute:
+  echo: true
+  warning: false
+---
+
+# Introduction
+
+For this project, I will use the Air Quality dataset from the UCI Machine Learning Repository. The dataset contains air pollution measurements, temperature values, and sensor responses collected over time. The original dataset has 9,471 rows and 17 columns in wide format.
+
+I will focus on carbon monoxide, nitrogen dioxide, temperature, and the sensor responses related to these two pollutants. My goal will be to transform the dataset into tidy format and examine how air pollutant concentrations change over time.
+
+**Original Dataset:** <https://archive.ics.uci.edu/dataset/360/air+quality>
+
+# Planned Approach
+
+First, I will load the original dataset from my GitHub repository into R. I will examine its structure and select seven variables for my analysis: measurement date, measurement time, temperature, carbon monoxide concentration, nitrogen dioxide concentration, carbon monoxide sensor response, and nitrogen dioxide sensor response. I will then rename the variables to make them easier to understand.
+
+Next, I will use the pivot_longer() function from the tidyr package to transform the data from wide to long format. I will check for missing values and remove incomplete measurements. I will also identify and remove invalid values recorded as -200.
+
+After cleaning the data, I will calculate summary statistics, including the mean, median, minimum, maximum, and standard deviation. Finally, I will calculate monthly average concentrations for carbon monoxide and nitrogen dioxide and use ggplot2 to visualize how they change over time.
+
+# Anticipated Challenges
+
+One possible challenge will be handling missing and invalid values. The dataset uses -200 to represent missing measurements, so I will need to make sure these values do not affect my analysis results.
+
+I will also need to convert the date and time columns into appropriate formats and make sure the measurements are correctly preserved during the wide-to-long transformation.
+
+# 
