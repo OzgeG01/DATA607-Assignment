@@ -1,0 +1,33 @@
+---
+title: "Project 2 - Water Quality"
+author: "Ozge Gundogan"
+date: 7.10.2026
+format:
+  html:
+    toc: true
+    code-fold: true
+    theme: flatly
+execute:
+  echo: true
+  warning: false
+---
+
+# Introduction
+
+In this project, I will use R to tidy and transform a water quality dataset from the National Park Service. The dataset contains water chemistry measurements collected at different monitoring sites between 2006 and 2024. I will focus on four measurements: pH, acid neutralizing capacity, total nitrogen, and total phosphorus. My goal is to prepare the data for analysis and examine how water quality has changed over time, particularly at Eagle Lake in Acadia National Park.
+
+**Original Dataset:** https://catalog.data.gov/dataset/water-quality-and-quantity-monitoring-data-package-for-measurements-collected-wi-2006-2024
+
+# Planned Approach
+
+I will first import the original wide-format dataset from my GitHub repository and examine its structure. Then, I will select 10 relevant variables and rename the four water quality measurements to make their names more descriptive.
+
+Next, I will use pivot_longer() to transform the measurement columns into a tidy format. I will check for missing values and examine unusual measurements.
+
+After cleaning the data, I will calculate summary statistics for the four water quality measurements and compare average values across monitoring sites. Finally, I will focus on Eagle Lake in Acadia National Park to examine yearly trends and visualize the results using line charts.
+
+# Anticipated Challenges
+
+One challenge is that the original dataset contains many columns that are not needed for my analysis. I will need to select the relevant variables while keeping the original raw data unchanged.
+
+Another challenge is handling missing values and unusual measurements. Some measurements may be missing, and certain values may need further examination before analysis.
