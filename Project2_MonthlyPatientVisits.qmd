@@ -1,0 +1,39 @@
+---
+title: "Project 2 - Monthly Patient Visits"
+author: "Ozge Gundogan"
+date: 8.10.2026
+format:
+  html:
+    toc: true
+    code-fold: true
+    theme: flatly
+execute:
+  echo: true
+  warning: false
+---
+
+# Introduction
+
+In this project, I will analyze monthly patient visits across 10 community health clinics during 2025.
+
+The original dataset is in wide format, where each clinic has one row and monthly patient visit counts are stored in separate columns. I will use R to transform the dataset into tidy format and then analyze how patient visits vary across clinics and months.
+
+The goal of this project is to practice data tidying and transformation while exploring patterns in patient visits.
+
+**Original Dataset:** <https://brightspace.cuny.edu/d2l/le/1404182/discussions/threads/5822251/View>
+
+# Planned Approach
+
+First, I will import the CSV file into R and examine its structure to understand how the data is organized.
+
+Next, I will use pivot_longer() from the tidyr package to transform the dataset from wide to long format. I will also rename the columns to make them easier to understand.
+
+After tidying the data, I will check for missing values and data consistency. I will also identify the minimum and maximum monthly patient visits for each clinic and calculate summary statistics, including the mean, median, and standard deviation.
+
+Finally, I will calculate total patient visits by clinic and by month. I will use a bar chart to compare clinics and a line chart to examine monthly changes throughout 2025.
+
+# Anticipated Challenges
+
+One possible challenge is transforming the monthly columns into a single month column while keeping the correct clinic names and patient visit counts.
+
+Another challenge is making sure that the months appear in chronological order rather than alphabetical order, especially in the monthly visualization.
