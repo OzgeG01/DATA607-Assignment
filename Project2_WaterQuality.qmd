@@ -1,7 +1,7 @@
 ---
 title: "Project 2 - Water Quality"
 author: "Ozge Gundogan"
-date: 7.10.2026
+date: 2026-10-09
 format:
   html:
     toc: true
@@ -31,3 +31,302 @@ After cleaning the data, I will calculate summary statistics for the four water 
 One challenge is that the original dataset contains many columns that are not needed for my analysis. I will need to select the relevant variables while keeping the original raw data unchanged.
 
 Another challenge is handling missing values and unusual measurements. Some measurements may be missing, and certain values may need further examination before analysis.
+
+# Code Base
+
+### Required Packages
+
+I will use three R packages for this project. The tidyr package will be used to transform the dataset from wide to long format. The dplyr package will be used to select, rename, filter, and summarize the data. The ggplot2 package will be used to create visualizations.
+
+```{r}
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+```
+
+### Data Source and Import
+
+The dataset was obtained from the National Park Service through Data.gov. It contains water quality measurements collected at different monitoring sites between 2006 and 2024.
+
+I saved the original wide-format dataset as a CSV file in my public GitHub repository. I will import this file into R using read.csv2() while preserving the original column names and data structure.
+
+**Data Source:** https://catalog.data.gov/dataset/water-quality-and-quantity-monitoring-data-package-for-measurements-collected-wi-2006-2024
+
+```{r}
+water_raw <- read.csv2(
+  "https://raw.githubusercontent.com/OzgeG01/DATA607-Assignment/refs/heads/main/Water_Quality.csv",
+  dec = ".",
+  check.names = FALSE
+)
+
+head(water_raw)
+```
+
+### Data Structure Before Tidying
+
+Before tidying the dataset, I will examine its original structure using str(). This will help me identify the number of rows and columns, variable names, data types, and sample values. Understanding the original structure is important before selecting variables and transforming the data from wide to long format.
+
+```{r}
+str(water_raw)
+```
+
+The original dataset contains 3,014 observations and 51 variables. The variables include character, integer, and numeric data types. Some columns contain missing values (NA). The sampling date and time are stored as character variables. I will consider these data types and missing values during the tidying process.
+
+### Selecting Variables
+
+The original dataset contains 51 variables, but I will select only the 10 variables relevant to my analysis. These variables include information about the monitoring locations, sampling dates and times, sample depth, and four water quality measurements: pH, acid neutralizing capacity, total nitrogen, and total phosphorus. I will use select() to keep these variables without modifying the original dataset.
+
+```{r}
+water_selected <- water_raw %>%
+  select(
+    UnitName,
+    SiteName,
+    SiteType,
+    EventDate,
+    SampleTime,
+    SampleDepth_m,
+    pH_Lab,
+    ANC_ueqL,
+    TN_mgL,
+    TP_ugL
+  )
+
+head(water_selected)
+```
+
+### Renaming Variables
+
+After selecting the 10 variables, I will use rename() to give the four water quality measurements more descriptive names. I will keep the measurement units in the column names and leave the other six variables unchanged. This will make the measurements easier to identify and understand during analysis.
+
+```{r}
+water_renamed <- water_selected %>%
+  rename(
+    pH = pH_Lab,
+    AcidNeuCap_ueqL = ANC_ueqL,
+    TotalNitrogen_mgL = TN_mgL,
+    TotalPhosphorus_ugL = TP_ugL
+  )
+
+head(water_renamed)
+```
+
+### Transforming Wide Data to Long Format
+
+The four water quality measurements are currently stored in separate columns. I will use pivot_longer() to transform these columns into a long format. This will create two new columns: Measurement, which identifies the type of water quality measurement, and Value, which contains the corresponding measurement value. The monitoring site and sampling information will remain unchanged.
+
+```{r}
+water_long <- water_renamed %>%
+  pivot_longer(
+    cols = c(
+      pH,
+      AcidNeuCap_ueqL,
+      TotalNitrogen_mgL,
+      TotalPhosphorus_ugL
+    ),
+    names_to = "Measurement",
+    values_to = "Value"
+  )
+
+head(water_long)
+```
+
+### Missing Values
+
+After transforming the dataset into long format, I will check for missing values. Some water quality measurements may not have been recorded at every monitoring site or sampling date. I will use is.na() to count the missing values for each measurement type before deciding how to handle them.
+
+```{r}
+missing_values <- water_long %>%
+  group_by(Measurement) %>%
+  summarise(
+    Missing_Count = sum(is.na(Value)),
+    .groups = "drop"
+  )
+
+missing_values
+```
+
+The results show that all four water quality measurements contain missing values. pH has the highest number of missing values (955), followed by acid neutralizing capacity (921), total phosphorus (725), and total nitrogen (409). These missing values need to be handled before calculating summary statistics and examining water quality trends.
+
+### Removing Missing Values
+
+After identifying the missing values, I will use drop_na() to remove rows with missing measurement values. I will not replace missing values with zero because this could affect the analysis results. I will save the cleaned data as water_tidy and use it for further analysis. The original dataset will remain unchanged.
+
+```{r}
+water_tidy <- water_long %>%
+  drop_na(Value)
+
+head(water_tidy)
+```
+
+### Checking Date and Time Formats
+
+Before checking unusual measurement values, I will examine the date and time variables. Both EventDate and SampleTime were imported as character variables. I will check their formats to determine whether they need to be converted for further analysis, especially when examining water quality trends over time.
+
+```{r}
+water_tidy %>%
+  select(EventDate, SampleTime) %>%
+
+head()
+```
+
+### Converting Date and Time Formats
+
+The sampling dates and times were originally stored as character variables. I will convert EventDate to Date format and SampleTime to a time format using as.Date() and hms::as_hms(). This will preserve the date and time information in separate columns and make them suitable for further analysis.
+
+```{r}
+# Convert date and time variables
+water_tidy <- water_tidy %>%
+  mutate(
+    EventDate = as.Date(EventDate),
+    SampleTime = hms::as_hms(SampleTime)
+  )
+
+head(water_tidy)
+```
+
+### Checking Unusual Values
+
+I will check for unusual values in the four water quality measurements. I will calculate the minimum and maximum values for each measurement type to identify possible outliers or values that may need further examination. I will not remove any unusual values without first examining them.
+
+```{r}
+water_tidy %>%
+  group_by(Measurement) %>%
+  summarise(
+    MinValue = min(Value),
+    MaxValue = max(Value),
+    .groups = "drop"
+  )
+```
+
+The minimum and maximum values show some potentially unusual measurements. The minimum pH value is -0.73, which is unexpected for natural surface water. Acid neutralizing capacity includes negative values, while total nitrogen and total phosphorus have relatively high maximum values. These measurements require further examination before deciding whether any values should be excluded from the analysis.
+
+### Examining Unusual Measurements
+
+Since the minimum pH value is negative, I will examine the records with negative pH measurements. I will check their monitoring locations and sampling dates to better understand these unusual values.
+
+```{r}
+water_tidy %>%
+  filter(Measurement == "pH", Value < 0) %>%
+  select(UnitName, SiteName, EventDate, Measurement, Value)
+```
+
+### Handling Unusual pH Values
+
+I found one negative pH measurement (-0.73) recorded at Eagle Lake in Acadia National Park on August 18, 2014. Since this value is highly unusual for natural lake water, I will exclude it from the analysis as a potentially invalid measurement. I will keep the original data unchanged and retain the other measurements.
+
+```{r}
+water_tidy <- water_tidy %>%
+  filter(!(Measurement == "pH" & Value < 0))
+```
+
+I will check the minimum pH value after removing the unusual negative measurement.
+
+```{r}
+water_tidy %>%
+  filter(Measurement == "pH") %>%
+  summarise(MinValue = min(Value))
+```
+
+### Summary Statistics
+
+After cleaning the dataset, I will calculate summary statistics for the four water quality measurements. I will use the tidy dataset to calculate the number of observations, mean, median, minimum, and maximum values for each measurement type. These statistics will help me understand the overall distribution of water quality measurements across the monitoring sites. I will keep the high nitrogen and phosphorus values because there is not enough evidence to consider them incorrect.
+
+```{r}
+water_summary <- water_tidy %>%
+  group_by(Measurement) %>%
+  summarise(
+    Count = n(),
+    Mean = round(mean(Value), 2),
+    Median = round(median(Value), 2),
+    Min = round(min(Value), 2),
+    Max = round(max(Value), 2),
+    .groups = "drop"
+  )
+
+water_summary
+```
+
+The results show that the average pH is 6.87, with a median of 6.74 and values ranging from 4.09 to 9.60. The average acid neutralizing capacity is 625.43 microeq/L, with a median of 98.87 microeq/L. Total nitrogen has an average of 0.51 mg/L and a median of 0.23 mg/L, while total phosphorus has an average of 22.89 microg/L and a median of 10.00 microg/L.
+
+The number of observations varies across the four measurements because some values were missing in the original dataset. Total nitrogen has the highest number of valid observations (2,605), while pH has the lowest (2,058). The mean values are higher than the median values, especially for acid neutralizing capacity and total phosphorus, suggesting that some high measurements affect the averages. The wide ranges in some measurements also suggest differences in water chemistry across the monitoring sites.
+
+### Comparison Across Monitoring Sites
+
+I will compare the average water quality measurements across different monitoring sites. I will group the tidy data by national park, monitoring site, and measurement type, then calculate the number of observations and average value for each group. This will help me examine differences in water chemistry across monitoring locations.
+
+```{r}
+site_summary <- water_tidy %>%
+  group_by(UnitName, SiteName, Measurement) %>%
+  summarise(
+    Count = n(),
+    Mean = round(mean(Value), 2),
+    .groups = "drop"
+  )
+
+head(site_summary)
+```
+
+The results show some differences in water quality measurements between monitoring sites. For example, Aunt Betty Pond Inlet has an average total nitrogen level of 0.33 mg/L, while Aunt Bettys Pond has a slightly higher average of 0.39 mg/L. Both sites have the same average acid neutralizing capacity of 146 microeq/L. These results suggest that some water quality measurements vary between monitoring sites, while others are similar.
+
+### Eagle Lake Yearly Trends
+
+I will focus on Eagle Lake in Acadia National Park to examine how water quality measurements have changed over time. I will filter the tidy dataset to select Eagle Lake observations and extract the year from the sampling date. Then, I will calculate the annual mean and number of observations for each of the four water quality measurements. This will help me identify yearly changes in water chemistry at Eagle Lake.
+
+```{r}
+eagle_yearly <- water_tidy %>%
+  filter(
+    UnitName == "Acadia National Park",
+    SiteName == "Eagle Lake"
+  ) %>%
+  mutate(Year = as.integer(format(EventDate, "%Y"))) %>%
+  group_by(Year, Measurement) %>%
+  summarise(
+    Mean = round(mean(Value), 2),
+    Count = n(),
+    .groups = "drop"
+  )
+
+eagle_yearly
+```
+
+### Eagle Lake Yearly Trends Visualization
+
+I will use line charts to visualize the annual average water quality measurements at Eagle Lake. I will create a separate panel for each measurement because they have different units and scales. This will help me examine changes in pH, acid neutralizing capacity, total nitrogen, and total phosphorus over time.
+
+```{r}
+ggplot(eagle_yearly, aes(x = Year, y = Mean)) +
+  geom_line(color = "steelblue", linewidth = 1) +
+  geom_point(color = "steelblue", size = 2) +
+  facet_wrap(~ Measurement, scales = "free_y") +
+  labs(
+    title = "Annual Water Quality Trends at Eagle Lake",
+    subtitle = "Acadia National Park",
+    x = "Year",
+    y = "Annual Mean"
+  ) +
+  theme_minimal()
+```
+
+The line charts show changes in water quality measurements at Eagle Lake between 2006 and 2024. Acid neutralizing capacity generally increased during the early years but fluctuated afterward. Total nitrogen reached a higher level around 2011 and remained relatively stable at lower levels in later years. Total phosphorus showed fluctuations throughout the study period, with a noticeable decrease around 2020.
+
+The average pH remained relatively stable, mostly between 6.4 and 6.7, although a noticeable decrease occurred around 2017. Overall, the results suggest that water chemistry at Eagle Lake has changed over time, but the patterns differ across the four measurements. Some yearly averages are based on only a few observations, so these trends should be interpreted with caution.
+
+# Conclusions
+
+In this project, I transformed the original water quality dataset from wide to long format using tidyr and dplyr. I selected 10 relevant variables, renamed the four water quality measurements, and handled missing values. I also converted the date and time variables and excluded one unusual negative pH measurement from Eagle Lake.
+
+The overall analysis showed an average pH of 6.87, acid neutralizing capacity of 625.43 microeq/L, total nitrogen of 0.51 mg/L, and total phosphorus of 22.89 microg/L. The results also showed differences in water chemistry across monitoring sites.
+
+At Eagle Lake, the yearly trends showed that acid neutralizing capacity generally increased in the early years and fluctuated afterward. Total nitrogen remained relatively stable in later years, while total phosphorus showed more variation. The average pH was mostly between 6.4 and 6.7.
+
+Overall, the analysis suggests that water chemistry at Eagle Lake has changed over time, although the patterns differ across measurements. Since some years have only a few observations, the results should be interpreted with caution. Further analysis with more consistent sampling could help identify long-term trends.
+
+# Citation
+
+I used ChatGPT (GPT-5.6 Luna), developed by OpenAI, to help me understand some of the functions I used in this assignment and to check my work.
+
+OpenAI. (2026). ChatGPT (GPT-5.6 Luna) \[Large language model\]. \[<https://chatgpt.com/> Accessed October 9, 2026\].
+
+# Video Explainer
+
+Link:
