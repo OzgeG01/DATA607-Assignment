@@ -1,7 +1,7 @@
 ---
 title: "Project 2 - Monthly Patient Visits"
 author: "Ozge Gundogan"
-date: 8.10.2026
+date: 2026-10-09
 format:
   html:
     toc: true
@@ -37,3 +37,215 @@ Finally, I will calculate total patient visits by clinic and by month. I will us
 One possible challenge is transforming the monthly columns into a single month column while keeping the correct clinic names and patient visit counts.
 
 Another challenge is making sure that the months appear in chronological order rather than alphabetical order, especially in the monthly visualization.
+
+# Code Base
+
+### Required Packages
+
+I will use three R packages for this project. The tidyr package will help me transform the dataset from wide to long format. I will use dplyr to clean the data and calculate summary statistics. Finally, I will use ggplot2 to create charts and visualize patterns in monthly patient visits.
+
+```{r}
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+```
+
+### Data Source and Import
+
+I will import the Monthly Patient Visits dataset from my GitHub repository using the read.csv2() function. I will keep the original column names and display the first six rows to examine how the data is organized.
+
+**Data Source:** <https://brightspace.cuny.edu/d2l/le/1404182/discussions/threads/5822251/View>
+
+```{r}
+data_url <- "https://raw.githubusercontent.com/OzgeG01/DATA607-Assignment/refs/heads/main/monthly_patient_visits.csv"
+
+patient_raw <- read.csv2(data_url, check.names = FALSE)
+
+knitr::kable(head(patient_raw))
+```
+
+### Data Structure Before Tidying
+
+Before tidying the dataset, I will use str() to examine the column names and data types. This will help me understand the structure of the original wide-format dataset.
+
+```{r}
+str(patient_raw)
+```
+
+The dataset contains 10 observations and 13 variables. The Clinic column contains clinic names as character values, while the 12 monthly columns (Jan to Dec) contain patient visit counts as integers. Each row represents one clinic. The data is currently in wide format because monthly visits are stored in separate columns.
+
+### Renaming Variables
+
+I will rename the Clinic column to ClinicName to make the variable name more descriptive. I will keep the monthly column names unchanged because they are already clear and easy to understand.
+
+```{r}
+patient_renamed <- patient_raw %>%
+  rename(
+    ClinicName = Clinic
+  )
+
+knitr::kable(head(patient_renamed))
+```
+
+### Transforming Data from Wide to Long Format
+
+I will use pivot_longer() from the tidyr package to transform the dataset from wide to long format. The 12 monthly columns will be combined into two columns: Month and PatientVisits. The ClinicName column will remain unchanged. Each row will represent the number of patient visits for one clinic in one month.
+
+```{r}
+patient_long <- patient_renamed %>%
+  pivot_longer(
+    cols = Jan:Dec,
+    names_to = "Month",
+    values_to = "PatientVisits"
+  )
+
+head(patient_long)
+```
+
+### Missing Values
+
+After transforming the dataset into long format, I will check for missing values in each column. This will help me determine whether any clinic names, months, or patient visit counts are missing before continuing with the analysis.
+
+```{r}
+patient_long %>%
+  summarise(
+    ClinicNameMissing = sum(is.na(ClinicName)),
+    MonthMissing = sum(is.na(Month)),
+    PatientVisitsMissing = sum(is.na(PatientVisits))
+  )
+```
+
+The missing value check showed that there are no missing values in the ClinicName, Month, or PatientVisits columns. Therefore, no rows need to be removed or modified due to missing data.
+
+### Checking Unusual Values
+
+I will check the PatientVisits column for unusual values, such as negative numbers or decimal values. Since patient visits represent counts, all values should be non-negative whole numbers. This check will help me identify any potential data inconsistencies before continuing with the analysis.
+
+```{r}
+patient_long %>%
+  summarise(
+    NegativeValues = sum(PatientVisits < 0),
+    NonIntegerValues = sum(PatientVisits %% 1 != 0)
+  )
+```
+
+The results show that there are no negative or decimal values in the PatientVisits column. All patient visit counts are non-negative whole numbers. Therefore, no corrections are needed for these values, and the dataset is ready for further analysis.
+
+### Summary Statistics
+
+After checking the data for missing and unusual values, I will calculate summary statistics for monthly patient visits. I will calculate the number of observations, mean, median, minimum, maximum, and standard deviation for each clinic. These statistics will help me compare patient visit counts across clinics and identify differences in their monthly activity.
+
+```{r}
+patient_summary <- patient_long %>%
+  group_by(ClinicName) %>%
+  summarise(
+    Count = n(),
+    Mean = round(mean(PatientVisits), 2),
+    Median = median(PatientVisits),
+    Min = min(PatientVisits),
+    Max = max(PatientVisits),
+    SD = round(sd(PatientVisits), 2),
+    .groups = "drop"
+  )
+
+knitr::kable(patient_summary)
+```
+
+The summary statistics show that Central Community Health Center had the highest average monthly patient visits (358.25), followed by Lakeside Community Clinic (337.83) and Westview Community Health Center (317.92). Eastside Family Clinic had the lowest monthly average (193.25). Each clinic had 12 monthly observations. The standard deviations ranged from 25.67 at Eastside Family Clinic to 36.22 at Lakeside Community Clinic, showing that monthly patient visits varied across clinics.
+
+### Total Patient Visits by Clinic
+
+I will calculate the total number of patient visits for each clinic during 2025. I will group the data by clinic and sum the monthly patient visits. This will help me compare the overall patient volume across the 10 clinics and identify which clinics had the highest and lowest total visits.
+
+```{r}
+patient_clinic_totals <- patient_long %>%
+  group_by(ClinicName) %>%
+  summarise(
+    TotalVisits = sum(PatientVisits),
+    .groups = "drop"
+  ) %>%
+  arrange(desc(TotalVisits))
+
+patient_clinic_totals
+```
+
+The results show that Central Community Health Center had the highest total number of patient visits in 2025, with 4,299 visits. Lakeside Community Clinic ranked second with 4,054 visits, followed by Westview Community Health Center with 3,815 visits. Eastside Family Clinic had the lowest total, with 2,319 visits. These results show differences in patient volume across the 10 clinics.
+
+### Total Patient Visits by Clinic Visualization
+
+I will create a bar chart to compare the total number of patient visits across the 10 clinics in 2025. I will arrange the clinics from the highest to the lowest number of visits to make the differences easier to see.
+
+```{r}
+ggplot(patient_clinic_totals,
+       aes(x = reorder(ClinicName, TotalVisits),
+           y = TotalVisits)) +
+  geom_col(fill = "steelblue") +
+  coord_flip() +
+  labs(
+    title = "Total Patient Visits by Clinic in 2025",
+    x = "Clinic",
+    y = "Total Patient Visits"
+  ) +
+  theme_minimal()
+```
+
+The bar chart shows that Central Community Health Center had the highest total number of patient visits in 2025, with 4,299 visits. Lakeside Community Clinic followed with 4,054 visits. Eastside Family Clinic had the lowest total, with 2,319 visits. The chart makes it easier to compare patient volumes across the 10 clinics and shows that some clinics served considerably more patients than others.
+
+### Total Patient Visits by Month
+
+I will calculate the total number of patient visits for each month in 2025 across all 10 clinics. I will group the data by month and sum the patient visits. I will also arrange the months in chronological order from January to December. This will help me identify which months had the highest and lowest patient visits.
+
+```{r}
+patient_monthly_totals <- patient_long %>%
+  mutate(
+    Month = factor(Month, levels = month.abb)
+  ) %>%
+  group_by(Month) %>%
+  summarise(
+    TotalVisits = sum(PatientVisits),
+    .groups = "drop"
+  )
+
+patient_monthly_totals
+```
+
+The monthly totals show that patient visits generally increased throughout 2025. February had the lowest total with 2,218 visits, while December had the highest total with 3,142 visits. Patient visits increased from 2,235 in January to 3,142 in December. Although there was a small decrease in February, the overall trend shows increasing patient visits across the 10 clinics during the year.
+
+### Total Patient Visits by Month Visualization
+
+I will create a line chart to visualize the total number of patient visits across all 10 clinics for each month in 2025. This chart will help me identify monthly trends and changes in patient volume.
+
+```{r}
+ggplot(patient_monthly_totals,
+       aes(x = Month, y = TotalVisits, group = 1)) +
+  geom_line(color = "steelblue", linewidth = 1) +
+  geom_point(color = "steelblue", size = 2) +
+  labs(
+    title = "Monthly Patient Visits in 2025",
+    x = "Month",
+    y = "Total Patient Visits"
+  ) +
+  theme_minimal()
+```
+
+The line chart shows an overall upward trend in patient visits throughout 2025. Total visits decreased slightly from 2,235 in January to 2,218 in February, but increased steadily from March through December. December had the highest number of visits (3,142), while February had the lowest (2,218). This pattern shows that patient visits increased across the 10 clinics during the year.
+
+# Conclusion
+
+In this project, I analyzed monthly patient visits across 10 community health clinics during 2025. I transformed the original dataset from wide to long format using pivot_longer() and checked for missing and unusual values. The dataset contained no missing values, negative counts, or decimal values, so no additional cleaning was needed.
+
+The summary statistics showed differences in patient visits across clinics. Central Community Health Center had the highest total number of visits (4,299), while Eastside Family Clinic had the lowest (2,319).
+
+The monthly analysis showed that patient visits generally increased throughout 2025. February had the lowest total with 2,218 visits, while December had the highest with 3,142 visits. The line chart showed a steady increase in visits from March through December.
+
+Overall, this project helped me practice transforming wide data into tidy format and using summary statistics and visualizations to identify patterns. The results showed differences in patient volume across clinics and an overall increase in monthly visits during 2025.
+
+# Citation
+
+I used ChatGPT (GPT-5.6 Luna), developed by OpenAI, to help me understand some of the functions I used in this assignment and to check my work.
+
+OpenAI. (2026). ChatGPT (GPT-5.6 Luna) \[Large language model\]. \[<https://chatgpt.com/> Accessed October 9, 2026\].
+
+# Video Explainer
+
+Link:
