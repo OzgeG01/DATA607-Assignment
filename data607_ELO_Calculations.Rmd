@@ -1,0 +1,235 @@
+---
+title: "ELO Calculations"
+author: "Ozge Gundogan"
+date: "2026-10-11"
+output: html_document
+---
+
+# Introduction
+
+In this assignment, I will use the chess tournament data from Project 1 to calculate the expected score for each player using the ELO rating system. I will compare each player's expected score with their actual score to identify the five players who performed better than expected and the five players who performed worse than expected.
+
+# Planned Approach
+
+I will use R to analyze the chess tournament data from Project 1. First, I will identify each player's pre-tournament rating and the ratings of their opponents. Then, I will use the ELO formula to calculate the expected score for each game and add these values to find each player's total expected score. Next, I will calculate the difference between the actual and expected scores. Finally, I will sort the results to identify the five players who overperformed the most and the five players who underperformed the most.
+
+# Anticipated Challenges
+
+One challenge may be matching each player with the correct opponents and their ratings. Some players may also have rounds without an opponent, such as a bye. I will need to handle these rounds carefully because they do not have an opponent rating. Another challenge will be making sure the expected scores and actual scores are compared correctly.
+
+# Code Base
+
+### Load the Data
+
+The tournament data are stored in a text file available through GitHub. The file is read directly from the GitHub raw URL so that the data remain accessible when the code is run on another computer.
+
+```{r load_data}
+#| warning: false
+data_url <- "https://raw.githubusercontent.com/OzgeG01/DATA607-Assignment/refs/heads/main/tournamentinfo.txt"
+
+tournament_data <- readLines(data_url)
+
+head(tournament_data, 10)
+```
+
+### Identify Player Rows
+
+Each player's main record begins with a player number followed by a vertical bar. These rows contain the player's name, total points, and round-by-round opponent information.
+
+```{r player_rows}
+player_rows <- grep("^\\s*\\d+\\s*\\|", tournament_data, value = TRUE)
+
+head(player_rows)
+```
+
+### Extract Player Numbers
+
+The player number is extracted from the first field of each main player row. These numbers will be used to match each opponent with the corresponding player's pre-tournament rating.
+
+```{r player_numbers}
+player_numbers <- as.numeric(
+  trimws(sapply(strsplit(player_rows, "\\|"), `[`, 1))
+)
+
+head(player_numbers)
+```
+
+### Extract Player Names
+
+The player name is extracted from each main player row by splitting the row at the vertical bar. The second field contains the player's name, and trimws() is used to remove any extra spaces.
+
+```{r extract_names}
+player_names <- trimws(
+  sapply(strsplit(player_rows, "\\|"), `[`, 2)
+)
+
+head(player_names)
+```
+
+### Extract Total Points
+
+The total number of points for each player is stored in the third field of the main player row. The rows are split using the vertical bar as the delimiter, and the extracted values are converted to numeric format.
+
+```{r extract_points}
+total_points <- as.numeric(
+  trimws(sapply(strsplit(player_rows, "\\|"), `[`, 3))
+)
+
+head(total_points)
+```
+
+### Identify Player Detail Rows
+
+The second line of each player record contains the player's state and rating information. These rows begin with a two-letter state abbreviation followed by a vertical bar.
+
+```{r detail_rows}
+detail_rows <- grep("^\\s*[A-Z]{2}\\s*\\|", tournament_data, value = TRUE)  
+
+head(detail_rows)
+```
+
+### Extract Player State
+
+The player's state is stored in the first field of the detail row. The detail rows are split using the vertical bar as the delimiter, and extra whitespace is removed from the extracted state values.
+
+```{r extract_state}
+player_states <- trimws(
+  sapply(strsplit(detail_rows, "\\|"), `[`, 1)
+)
+
+head(player_states)
+```
+
+### Extract Pre-Tournament Rating
+
+The player's pre-tournament rating appears in the detail row immediately after R:. A regular expression is used to extract this value, and the result is converted to numeric format.
+
+```{r extract_prerating}
+pre_ratings <- as.numeric(
+  sub(".*R:\\s*(\\d+).*", "\\1", detail_rows)
+)
+
+head(pre_ratings)
+```
+
+### Extract Opponent Numbers
+
+The round information begins with the fourth field of each main player row. First, the round fields are separated from the rest of the player information. Only games recorded as wins (W), losses (L), or draws (D) are included. Byes and other unplayed rounds are excluded.
+
+```{r extract_opponents}
+round_fields <- lapply(
+  strsplit(player_rows, "\\|"),
+  function(x) trimws(x[4:length(x)])
+)
+
+opponent_numbers <- lapply(round_fields, function(rounds) {
+  played_games <- rounds[grepl("^[WLD]\\s+\\d+$", rounds)]
+  as.numeric(sub("^[WLD]\\s+", "", played_games))
+})
+
+head(opponent_numbers)
+```
+
+### Calculate Expected Scores
+
+I will use the ELO formula to calculate each player's expected score against their opponents. I will calculate the expected score for each game based on the difference between the two players' pre-tournament ratings. Then, I will add these values to find each player's total expected score.
+
+```{r}
+expected_scores <- sapply(seq_along(player_numbers), function(i) {
+  opponent_ratings <- pre_ratings[
+    match(opponent_numbers[[i]], player_numbers)
+  ]
+  expected <- 1 / (1 + 10^((opponent_ratings - pre_ratings[i]) / 400))
+  sum(expected)
+})
+
+head(expected_scores)
+```
+
+### Calculate Actual Scores from Played Games
+
+I will calculate the actual score from the games each player played. I will assign 1 point for a win, 0.5 points for a draw, and 0 points for a loss. I will exclude byes and unplayed rounds to make a fair comparison with the expected scores.
+
+```{r}
+actual_scores <- sapply(round_fields, function(rounds) {
+  played_games <- rounds[grepl("^[WLD]\\s+\\d+$", rounds)]
+  results <- substr(played_games, 1, 1)
+  
+  sum(results == "W") + 0.5 * sum(results == "D")
+})
+
+head(actual_scores)
+```
+
+### Calculate Performance Differences
+
+I will subtract each player's expected score from their actual score to calculate the performance difference. A positive difference means the player performed better than expected, while a negative difference means the player performed worse than expected.
+
+```{r}
+performance_difference <- actual_scores - expected_scores
+
+head(performance_difference)
+```
+
+### Create the Results Data Frame
+
+I will create a data frame that includes each player's name, actual score, expected score, and performance difference. I will round the expected scores and differences to two decimal places to make the results easier to read.
+
+```{r}
+elo_results <- data.frame(
+  PlayerName = player_names,
+  ActualScore = actual_scores,
+  ExpectedScore = round(expected_scores, 2),
+  Difference = round(performance_difference, 2)
+)
+
+head(elo_results)
+```
+
+### Top 5 Overperforming Players
+
+I will sort the players by their performance differences from highest to lowest. Then, I will select the five players with the largest positive differences to identify who performed the most above their expected scores.
+
+```{r}
+top_overperformers <- head(
+  elo_results[order(-elo_results$Difference), ],
+  5
+)
+
+top_overperformers
+```
+
+Aditya Bajaj had the largest positive difference, scoring 4.05 points above his expected score. Zachary James Houghton followed with 3.13 points, and Anvit Rao with 3.06 points. All five players performed better than expected based on their ELO ratings.
+
+### Top 5 Underperforming Players
+
+I will sort the players by their performance differences from lowest to highest. Then, I will select the five players with the largest negative differences to identify who performed the most below their expected scores.
+
+```{r}
+top_underperformers <- head(
+  elo_results[order(elo_results$Difference), ],
+  5
+)
+
+top_underperformers
+```
+
+Loren Schwiebert had the largest negative difference, scoring 2.78 points below his expected score. George Avery Jones followed with 2.52 points below expectations, and Larry Hodge with 2.40 points below expectations. All five players performed worse than expected based on their ELO ratings.
+
+# Conclusion
+
+In this assignment, I used the ELO rating system to calculate the expected scores of 64 chess players and compared them with their actual scores.
+
+The results showed that Aditya Bajaj had the largest positive difference, scoring 6.0 points compared to an expected score of 1.95. This means he performed 4.05 points better than expected. On the other hand, Loren Schwiebert had the largest negative difference, scoring 3.5 points compared to an expected score of 6.28.
+
+Overall, this analysis shows how ELO ratings can be used to compare expected and actual performance in a chess tournament. It also shows that players can perform much better or worse than their ratings suggest.
+
+# Citation
+
+I used ChatGPT (GPT-5.6 Luna), developed by OpenAI, to help me understand some of the functions I used in this assignment and to check my work.
+
+OpenAI. (2026). ChatGPT (GPT-5.6 Luna) [Large language model]. [<https://chatgpt.com/> Accessed October 11, 2026].
+
+# Video Explainer
+
+Link:
