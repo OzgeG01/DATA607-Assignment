@@ -1,7 +1,7 @@
 ---
 title: "Project 2 - Air Quality"
 author: "Ozge Gundogan"
-date: 7.10.2026
+date: 2026-10-09
 format:
   html:
     toc: true
@@ -34,4 +34,262 @@ One possible challenge will be handling missing and invalid values. The dataset 
 
 I will also need to convert the date and time columns into appropriate formats and make sure the measurements are correctly preserved during the wide-to-long transformation.
 
-# 
+# Code Base
+
+### Required Packages
+
+I will use three R packages for this project. The tidyr package will be used to transform the dataset from wide to long format. The dplyr package will be used to select, rename, clean, and summarize the data. The ggplot2 package will be used to create visualizations of air quality measurements over time.
+
+```{r}
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+```
+
+### Data Source and Import
+
+The dataset was obtained from the UCI Machine Learning Repository. It contains air pollution measurements, temperature values, and sensor responses collected over time.
+
+I saved the original wide-format dataset as a CSV file in my public GitHub repository. I will import this file into R while preserving its original column names and structure.
+
+**Data Source:** <https://archive.ics.uci.edu/dataset/360/air+quality>
+
+```{r}
+air_raw <- read.csv2(
+  "https://raw.githubusercontent.com/OzgeG01/DATA607-Assignment/refs/heads/main/Air_Quality.csv",
+  dec = ",",
+  check.names = FALSE
+)
+
+head(air_raw)
+```
+
+### Data Structure Before Tidying
+
+Before tidying the dataset, I will examine its original structure using str(). This will help me identify the number of rows and columns, variable names, data types, and sample values. I will also check whether the dataset contains any empty or unnecessary columns before selecting the variables for analysis.
+
+```{r}
+str(air_raw)
+```
+
+The original dataset contains 9,471 observations and 17 variables. The variables include character, numeric, integer, and logical data types. The Date and Time columns are stored as character variables. Some measurements contain -200, which represents missing values in this dataset. The last two columns also appear to be empty. I will consider these issues during the data cleaning and transformation process.
+
+### Selecting Variables
+
+The original dataset contains 17 variables, but I will select only the 7 variables relevant to my analysis. These include the measurement date and time, temperature, carbon monoxide concentration, nitrogen dioxide concentration, and their corresponding sensor responses. I will use select() to keep these variables without modifying the original dataset.
+
+```{r}
+air_selected <- air_raw %>%
+  select(
+    Date,
+    Time,
+    T,
+    `CO(GT)`,
+    `NO2(GT)`,
+    `PT08.S1(CO)`,
+    `PT08.S4(NO2)`
+  )
+
+head(air_selected)
+```
+
+### Renaming Variables
+
+After selecting the 7 variables, I will use rename() to give five variables more descriptive names. These include temperature, carbon monoxide, nitrogen dioxide, and their corresponding sensor responses. I will keep the Date and Time column names unchanged. This will make the measurements easier to identify and understand during analysis.
+
+```{r}
+air_renamed <- air_selected %>%
+  rename(
+    Temperature = T,
+    CarbonMonoxide = `CO(GT)`,
+    NitrogenDioxide = `NO2(GT)`,
+    Sensor_CO = `PT08.S1(CO)`,
+    Sensor_NO2 = `PT08.S4(NO2)`
+  )
+
+head(air_renamed)
+```
+
+### Transforming Wide Data to Long Format
+
+I will use pivot_longer() to transform the carbon monoxide, nitrogen dioxide, and their corresponding sensor response columns from wide to long format. This will create two new columns: Variable, which identifies the measurement type, and Value, which contains the corresponding value. The Date, Time, and Temperature columns will remain unchanged.
+
+```{r}
+air_long <- air_renamed %>%
+  pivot_longer(
+    cols = c(
+      CarbonMonoxide,
+      NitrogenDioxide,
+      Sensor_CO,
+      Sensor_NO2
+    ),
+    names_to = "Variable",
+    values_to = "Value"
+  )
+
+head(air_long)
+```
+
+### Missing Values
+
+After transforming the dataset into long format, I will check for missing values. I will use `is.na()` to count the missing values for each measurement type. This will help me understand how many measurements are missing before cleaning the dataset.
+
+```{r}
+air_long %>%
+  group_by(Variable) %>%
+  summarise(
+    Missing_Count = sum(is.na(Value)),
+    .groups = "drop"
+  )
+```
+
+The results show that all four measurement types contain 114 missing values each, for a total of 456 missing values. These missing values need to be handled before performing the analysis. However, the dataset also uses -200 to represent missing measurements, so I will examine these values separately.
+
+### Removing Missing Values
+
+After identifying the missing values, I will use drop_na() to remove rows where the measurement value is missing. I will save the cleaned data as air_clean and use it for the next cleaning steps. The original dataset will remain unchanged.
+
+```{r}
+air_clean <- air_long %>%
+  drop_na(Value)
+
+head(air_clean)
+```
+
+### Checking Date and Time Formats
+
+Before continuing with data cleaning, I will examine the date and time variables. Both Date and Time were imported as character variables. I will check their formats to determine how they should be converted for the monthly air quality trend analysis.
+
+```{r}
+air_clean %>%
+  select(Date, Time) %>%
+
+head()
+```
+
+### Converting Date and Time Formats
+
+The measurement dates are stored in DD.MM.YYYY format, and the measurement times are stored in HH:MM format. Both variables were imported as character values. I will use as.Date() to convert the Date column into Date format and hms::as_hms() to convert the Time column into a time format. This will make the data suitable for further analysis of air quality measurements over time.
+
+```{r}
+air_clean <- air_clean %>%
+  mutate(
+    Date = as.Date(Date, format = "%d.%m.%Y"),
+    Time = hms::as_hms(Time)
+  )
+
+head(air_clean)
+```
+
+### Checking Invalid Values (-200)
+
+After converting the date and time variables, I will check for invalid measurements recorded as -200. According to the UCI Air Quality dataset documentation, -200 represents missing measurements. I will count these values for each measurement type before removing them from the analysis.
+
+```{r}
+air_clean %>%
+  group_by(Variable) %>%
+  summarise(
+    Invalid_Count = sum(Value == -200, na.rm = TRUE),
+    .groups = "drop"
+  )
+```
+
+The results show that all four measurement types contain invalid values recorded as -200. Carbon monoxide has the highest number of invalid values (1,683), followed by nitrogen dioxide (1,642). Both sensor response variables contain 366 invalid values each. In total, I identified 4,057 invalid measurement values. I will exclude these values from the analysis because -200 represents missing measurements rather than actual air quality readings.
+
+### Handling Invalid Values
+
+After identifying the invalid values, I will remove rows where the measurement value is -200. I will not replace these values with zero because this would affect the summary statistics and trend analysis. I will keep the original dataset unchanged and use the cleaned data for further analysis.
+
+```{r}
+air_tidy <- air_clean %>%
+  filter(Value != -200)
+
+head(air_tidy)
+```
+
+### Summary Statistics
+
+After cleaning the dataset, I will calculate summary statistics for carbon monoxide, nitrogen dioxide, and their corresponding sensor responses. I will use the tidy dataset to calculate the number of observations, mean, median, minimum, maximum, and standard deviation for each measurement type. These statistics will help me understand the distribution and variability of air quality measurements.
+
+```{r}
+air_summary <- air_tidy %>%
+  group_by(Variable) %>%
+  summarise(
+    Count = n(),
+    Mean = round(mean(Value), 2),
+    Median = round(median(Value), 2),
+    Min = round(min(Value), 2),
+    Max = round(max(Value), 2),
+    SD = round(sd(Value), 2),
+    .groups = "drop"
+  )
+
+air_summary
+```
+
+The summary statistics show that carbon monoxide has 7,674 valid observations, with a mean of 2.15 and a median of 1.8. Nitrogen dioxide has 7,715 valid observations, with a mean of 113.09 and a median of 109. The CO and NO2 sensors each have 8,991 valid observations. The sensor measurements have different scales from the pollutant concentrations, so their values should not be compared directly. The differences in observation counts also show that some measurements were missing or invalid.
+
+### Monthly Air Pollution Trends
+
+To examine changes in air pollution over time, I will calculate the monthly average concentrations of carbon monoxide and nitrogen dioxide. I will use the cleaned dataset and group the observations by month and pollutant type. This will help me identify how pollution levels change over time.
+
+```{r}
+air_monthly <- air_tidy %>%
+  filter(Variable %in% c("CarbonMonoxide", "NitrogenDioxide")) %>%
+  mutate(Month = format(Date, "%Y-%m")) %>%
+  group_by(Month, Variable) %>%
+  summarise(
+    Mean = round(mean(Value), 2),
+    Count = n(),
+    .groups = "drop"
+  )
+
+air_monthly
+```
+
+### Monthly Air Pollution Trends Visualization
+
+I will create line charts to visualize the monthly average concentrations of carbon monoxide and nitrogen dioxide. I will use separate panels because the two pollutants have different measurement units and scales. These charts will help me identify changes and possible seasonal patterns in air pollution levels.
+
+```{r}
+ggplot(air_monthly,
+       aes(x = Month, y = Mean, group = Variable)) +
+  geom_line(color = "steelblue", linewidth = 1) +
+  geom_point(color = "steelblue", size = 2) +
+  facet_wrap(~Variable, scales = "free_y",
+             labeller = as_labeller(c(
+               CarbonMonoxide = "Carbon Monoxide (mg/m3)",
+               NitrogenDioxide = "Nitrogen Dioxide (ug/m3)"
+             ))) +
+  labs(
+    title = "Monthly Average Air Pollution Levels",
+    x = "Month",
+    y = "Average Concentration"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+```
+
+The line charts show that carbon monoxide and nitrogen dioxide concentrations changed over time. Carbon monoxide levels decreased during the summer of 2004, reached higher values between October and December 2004, and then decreased again in early 2005. Nitrogen dioxide showed a different pattern, with its lowest monthly average in August 2004 and its highest in February 2005. Overall, both pollutants showed monthly fluctuations, but their patterns were not identical. These results suggest possible seasonal differences in air pollution levels.
+
+# Conclusion
+
+In this project, I analyzed the UCI Air Quality dataset to examine changes in carbon monoxide (CO) and nitrogen dioxide (NO2) concentrations over time. I selected relevant variables, transformed the data from wide to long format, and handled missing and invalid measurement values.
+
+The summary statistics showed that the average CO concentration was 2.15 mg/m3, while the average NO2 concentration was 113.09 ug/m3. The number of valid observations differed between variables because some measurements were missing or invalid.
+
+The monthly analysis showed that CO concentrations were relatively high between October and December 2004, while NO2 reached its highest monthly average in February 2005. Both pollutants showed changes over time, but their patterns were different.
+
+Overall, this analysis helped me understand how data cleaning and transformation can support air quality analysis. The results suggest possible seasonal patterns, but additional data and analysis would be needed to determine the factors behind these changes.
+
+# Citation
+
+I used ChatGPT (GPT-5.6 Luna), developed by OpenAI, to help me understand some of the functions I used in this assignment and to check my work.
+
+OpenAI. (2026). ChatGPT (GPT-5.6 Luna) \[Large language model\]. \[<https://chatgpt.com/> Accessed October 9, 2026\].
+
+# Video Explainer
+
+Link:
