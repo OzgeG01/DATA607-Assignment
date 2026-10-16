@@ -1,0 +1,22 @@
+---
+title: "Working with HTML and JSON"
+author: "Ozge Gundogan"
+format: html
+editor: visual
+---
+
+# Introduction
+
+In this assignment, I selected three books about physical chemistry. I manually created an HTML file and a JSON file containing the same information about each book, including the title, authors, publication year, publisher, and subject.
+
+The main goal of this assignment is to understand how HTML and JSON store data and how to import these formats into R data frames.
+
+# Planned Approach
+
+First, I will create an HTML file containing a table with information about three books. Then, I will create a JSON file using the same data.
+
+Next, I will use the rvest package to read the HTML table and the jsonlite package to read the JSON file. I will convert both datasets into separate R data frames. Finally, I will check whether the two data frames contain identical data and examine their structures.
+
+# Anticipated Challenges
+
+One possible challenge is understanding the different structures of HTML and JSON files and ensuring that both files contain exactly the same information.
