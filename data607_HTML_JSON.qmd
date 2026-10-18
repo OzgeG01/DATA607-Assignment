@@ -1,6 +1,7 @@
 ---
 title: "Working with HTML and JSON"
 author: "Ozge Gundogan"
+date: "10.18.2026"
 format: html
 editor: visual
 ---
@@ -20,3 +21,81 @@ Next, I will use the rvest package to read the HTML table and the jsonlite packa
 # Anticipated Challenges
 
 One possible challenge is understanding the different structures of HTML and JSON files and ensuring that both files contain exactly the same information.
+
+# Code Base
+
+### Load Required Packages
+
+To read and process the HTML and JSON files, I will use two R packages. The rvest package will be used to extract the table from the HTML file, while the jsonlite package will be used to import the JSON data into R.
+
+```{r}
+library(rvest)
+library(jsonlite)
+```
+
+### Load HTML Data
+
+First, I will use the read_html() function to read the HTML file. Then, I will extract the book table using html_element() and html_table(). Finally, I will convert the extracted table into a data frame.
+
+```{r}
+html_data <- read_html("https://raw.githubusercontent.com/OzgeG01/DATA607-Assignment/refs/heads/main/books.html")
+
+html_table <- html_data |>
+  html_element("table") |>
+  html_table()
+
+html_df <- as.data.frame(html_table)
+
+html_df
+```
+
+### Load JSON Data
+
+Next, I will use the fromJSON() function from the jsonlite package to read the JSON file. I will then convert the imported data into a separate data frame so that it can be compared with the HTML data frame.
+
+```{r}
+json_data <- fromJSON("https://raw.githubusercontent.com/OzgeG01/DATA607-Assignment/refs/heads/main/books.json")
+
+json_df <- as.data.frame(json_data)
+
+json_df
+```
+
+### Compare HTML and JSON Data
+
+After importing both files, I will use the identical() function to compare the two data frames. This function checks whether the data frames are exactly the same, including their values, column names, data types, and other attributes.
+
+```{r}
+identical(html_df, json_df)
+```
+
+The identical() function returned TRUE, indicating that the two data frames are identical. This confirms that the HTML and JSON files were successfully imported into R and produced the same data structure and values. Although HTML and JSON store information in different formats, both files contain the same book information.
+
+### Check Data Structures
+
+Although the identical() function returned TRUE, I will also examine the structures of both data frames using the str() function. This will allow me to verify the number of observations, column names, and data types in each data frame.
+
+```{r}
+str(html_df)
+str(json_df)
+```
+
+The str() function shows that both data frames contain 3 observations and 5 variables. The column names and data types are also the same in both data frames. The Publication_Year column is stored as an integer, while the other four columns are stored as character variables. These results further confirm that the HTML and JSON files were imported consistently into R.
+
+# Conclusion
+
+In this assignment, I manually created HTML and JSON files containing information about three physical chemistry books. I used the rvest and jsonlite packages to import the data from both files into separate R data frames.
+
+The identical() function returned TRUE, confirming that both data frames contain identical data. I also examined their structures using the str() function and verified that the column names and data types were the same.
+
+This assignment helped me understand how HTML and JSON store data differently and how both formats can be imported and compared in R.
+
+# Citation
+
+I used ChatGPT (GPT-5.6 Luna), developed by OpenAI, to help me understand some of the functions I used in this assignment and to check my work.
+
+OpenAI. (2026). ChatGPT (GPT-5.6 Luna) \[Large language model\]. \[<https://chatgpt.com/> Accessed October 18, 2026\].
+
+# Video Explainer
+
+Link:
