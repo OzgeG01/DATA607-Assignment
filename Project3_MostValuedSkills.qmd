@@ -1,0 +1,74 @@
+---
+title: "Most Valued Data Science Skills"
+author: "Ozge Gundogan, Antik Salimullah"
+date: 2026-10-20
+format:
+  html:
+    toc: true
+    number-sections: true
+editor: visual
+---
+
+# Introduction
+
+The goal of this project is to investigate which data science skills are most valued in the job market.
+
+Our main research question is: Which data science skills are most frequently requested by employers, and how do these requirements differ across data science roles?
+
+We will analyze job postings to identify the most frequently requested skills and compare skill demand across Data Analyst, Data Engineer, and Data Scientist positions, as well as different job levels.
+
+We will use the frequency of skills mentioned in job postings as our measure of skill demand. This will help us understand which skills employers commonly request.
+
+**Group Members:** Ozge Gundogan, Antik Salimullah
+
+# Planned Approach
+
+We will use the "Data Science Job Postings & Skills (2024)" dataset from Kaggle for this project.
+
+**Data Source:** <https://www.kaggle.com/datasets/asaniczka/data-science-job-postings-and-skills>
+
+We selected this dataset because it contains information about job postings, required skills, job titles, companies, and locations. The dataset consists of three CSV files: job_postings.csv, job_skills.csv, and job_summary.csv. We will primarily use job_postings.csv and job_skills.csv for our analysis.
+
+We will download the CSV files from Kaggle and load them into R using the read.csv() function. We will then examine the structure of the datasets and identify missing values, empty fields, and duplicate records. We will separate comma-separated skills into individual rows, standardize skill names, and remove duplicate job-skill combinations. We will also examine the number of skills listed in each job posting to identify potential outliers.
+
+We will use SQLite to organize the cleaned data into three related tables:\
+- Jobs: Stores information about job postings.\
+- Skills: Stores unique skills.\
+- Job_Skills: Connects job postings with their required skills.
+
+We will use job_link and skill_id to connect the three tables and represent the many-to-many relationship between jobs and skills. The ER diagram below illustrates our proposed database structure and key relationships.
+
+```{mermaid}
+erDiagram
+    Jobs ||--o{ Job_Skills : requires
+    Skills ||--o{ Job_Skills : includes
+
+    Jobs {
+        string job_link PK
+        string job_title
+        string company
+        string job_location
+        string job_level
+        string job_type
+    }
+
+    Skills {
+        int skill_id PK
+        string skill_name
+    }
+
+    Job_Skills {
+        string job_link PK,FK
+        int skill_id PK,FK
+    }
+```
+
+We will use SQL to identify the ten most frequently requested skills. We will also compare skill demand across different job levels and three job categories: Data Analyst, Data Engineer, and Data Scientist. We will calculate percentages when comparing groups with different numbers of job postings and use the ggplot2 package in R to visualize our findings.
+
+We plan to use Gmail for group communication and GitHub for sharing code, documentation, and version control.
+
+# Anticipated Challenges
+
+One possible challenge is handling missing or incomplete data. Some job postings may contain empty fields or missing skill information.
+
+Another challenge is cleaning and standardizing skill names. Since multiple skills are stored in a single column, we will need to separate them into individual records, standardize capitalization, and remove duplicate job-skill combinations.
