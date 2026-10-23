@@ -15,7 +15,7 @@ The goal of this project is to investigate which data science skills are request
 
 Our main research question is: Which data science skills are most frequently requested by employers, and how do these requirements differ across data science roles?
 
-We will analyze job postings to identify the most frequently requested skills and compare skill demand across Data Analyst, Data Engineer, and Data Scientist positions, as well as different job levels.
+We will analyze job postings to identify the most frequently requested technical skills and compare skill demand across Data Analyst, Data Engineer, and Data Scientist positions.
 
 We will use the frequency of skills mentioned in job postings as our measure of skill demand. This will help us understand which skills employers commonly request.
 
@@ -63,7 +63,7 @@ erDiagram
     }
 ```
 
-We will identify the ten most frequently requested skills. We will also compare skill demand across three job categories: Data Analyst, Data Engineer, and Data Scientist. We will calculate the percentage of job postings requiring each skill within each job category to make comparisons more meaningful. We will then use the ggplot2 package in R to visualize the results.
+We will analyze the frequency of technical skills mentioned in job postings to identify the most frequently requested skills. We will also compare skill demand across three job categories: Data Analyst, Data Engineer, and Data Scientist. We will calculate the percentage of job postings requiring each skill within each job category to make comparisons more meaningful. We will then use the ggplot2 package in R to visualize the results.
 
 We plan to use Gmail for group communication and GitHub for sharing code, documentation, and version control.
 
@@ -197,7 +197,9 @@ head(job_skills_long, 10)
 
 The results show that the skills were successfully separated into individual rows. Each row now contains one job link and one skill.
 
-## Fixing UTF-8 Encoding Issues
+## Standardizing Skill Names
+
+We will remove extra spaces at the beginning and end of skill names and convert all skill names to lowercase to ensure accurate counting. This will prevent the same skill from being counted separately due to differences in capitalization or spacing.
 
 While standardizing skill names, we encountered an error caused by invalid UTF-8 characters in the dataset. To resolve this issue, we will convert the text to UTF-8 encoding and remove any characters that cannot be converted.
 
@@ -210,19 +212,6 @@ job_skills_long <- job_skills_long %>%
 
 head(job_skills_long, 10)
 ```
-
-## Standardizing Skill Names
-
-We will remove extra spaces at the beginning and end of skill names and convert all skill names to lowercase to ensure accurate counting. This will prevent the same skill from being counted separately due to differences in capitalization or spacing.
-
-```{r}
-job_skills_long <- job_skills_long %>%
-  mutate(job_skills = tolower(trimws(job_skills)))
-
-head(job_skills_long, 10)
-```
-
-The results show that the skill names were successfully converted to lowercase and extra spaces were removed.
 
 We will further standardize skill names by combining different expressions that refer to the same skill. For example, "powerbi" and "power bi" will be treated as one skill. This will help prevent duplicate categories and improve the accuracy of our skill frequency analysis.
 
@@ -302,7 +291,7 @@ summary(skills_per_job$skill_count)
 
 The results show that job postings contain an average of 25.13 skills. The maximum is 218 skills, which is unusually high compared to the typical number of skills per posting. We will investigate potential outliers.
 
-We will use the Interquartile Range (IQR) method to identify potential outliers. IQR measures the spread of the middle 50% of the data (Q3 ??? Q1). We will calculate the upper limit using Q3 + 1.5 ?? IQR and count how many job postings exceed this limit.
+We will use the Interquartile Range (IQR) method to identify potential outliers. IQR measures the spread of the middle 50% of the data (Q3 - Q1). We will calculate the upper limit using Q3 + 1.5 \* IQR and count how many job postings exceed this limit.
 
 ```{r}
 Q1 <- quantile(skills_per_job$skill_count, 0.25)
@@ -344,9 +333,9 @@ job_skills_long %>%
   head(50)
 ```
 
-We examined the job posting with the highest skill count (218 skills). The position is Data Engineer IV at ACV Auctions. The first 50 skills include relevant technical skills such as SQL, AWS, ETL, and Snowflake. This suggests that the high skill count may reflect the broad technical requirements of the position rather than a data error.
+We examined the job posting with the highest skill count (218 skills). The position is Data Engineer IV at ACV Auctions. The displayed skills include relevant technical skills such as SQL, AWS, and ETL. This suggests that the high skill count may reflect the broad technical requirements of the position rather than a data error.
 
-Therefore, we decided to retain all 468 potential outliers because removing these records could result in the loss of valuable information about skill demand.
+We decided to retain all 468 potential outliers because unusually high skill counts do not necessarily indicate data errors. Removing these postings could result in the loss of potentially valuable information about skill demand.
 
 ## Creating a Relational Database with SQLite
 
@@ -384,7 +373,7 @@ dbGetQuery(con, "PRAGMA foreign_keys;")
 
 The result returned 1, confirming that foreign key constraints are enabled in our SQLite database.
 
-### Creating the Jobs Table
+### Preparing the Jobs Data
 
 We will prepare the Jobs table using the cleaned job postings dataset. This table will contain the job link, job title, company, location, job level, and job type. The job link will serve as the primary key because each job posting has a unique link.
 
@@ -419,7 +408,7 @@ dbGetQuery(con, "SELECT COUNT(*) AS total_jobs FROM Jobs")
 
 The Jobs table was successfully created in SQLite with job_link as the primary key. A total of 12,212 job postings were inserted into the table.
 
-### Creating the Skills Table
+### Preparing the Skills Data
 
 We will create the Skills table by extracting unique skill names from job_skills_long. Each skill will be assigned a unique skill_id, which will serve as the primary key in our relational database.
 
@@ -451,7 +440,7 @@ dbGetQuery(con, "SELECT COUNT(*) AS total_skills FROM Skills")
 
 The Skills table was successfully created in SQLite with skill_id as the primary key. A total of 62,752 unique skills were inserted into the table.
 
-### Creating the Job_Skills Table
+### Preparing the Job_Skills Data
 
 We will create the Job_Skills table by matching each skill in job_skills_long with its corresponding skill_id from the Skills table. This table will connect job postings and skills using their identifiers.
 
@@ -775,17 +764,17 @@ ggplot(
 
 ### Comparing Technical Skills Across Job Roles
 
-The results show both similarities and differences in technical skill requirements across the three job roles.
+The results show both similarities and differences in technical skill demand across Data Analyst, Data Scientist, and Data Engineer positions.
 
-Python and SQL are among the most frequently requested skills in all three positions. Python is especially important for Data Scientist (83.44%) and Data Engineer (73.47%) roles, while SQL is highly requested across Data Analyst (61.28%), Data Scientist (57.97%), and Data Engineer (63.09%) positions.
+Python and SQL are among the most frequently requested skills across all three roles. Python is particularly common in Data Scientist (83.44%) and Data Engineer (73.47%) postings, while SQL is frequently requested in Data Analyst (61.28%), Data Scientist (57.97%), and Data Engineer (63.09%) positions.
 
-Data Analyst positions emphasize data analysis (69.23%), data visualization (51.75%), and tools such as Tableau, Power BI, and Excel.
+Data Analyst positions place greater emphasis on data analysis (69.23%), SQL (61.28%), data visualization (51.75%), Python (43.06%), and Tableau (38.72%). These are the five most frequently requested technical skills for this role, highlighting the importance of analyzing, querying, and visualizing data.
 
-Data Scientist positions place greater emphasis on machine learning (73.42%), Python (83.44%), R (48.70%), and statistics (36.46%).
+Data Scientist positions show the highest demand for Python (83.44%), followed by machine learning (73.42%), SQL (57.97%), R (48.70%), and data visualization (37.95%). These findings highlight the importance of programming, machine learning, and data analysis for this role.
 
-Data Engineer positions focus more on data infrastructure and large-scale data processing, with skills such as Spark (40.79%), Java (37.76%), AWS (36.45%), Snowflake (35.42%), and Hadoop (31.60%).
+Data Engineer positions most frequently request Python (73.47%), SQL (63.09%), data engineering (51.63%), Spark (40.79%), and Java (37.76%). These findings reflect the importance of programming, data infrastructure, and large-scale data processing for this role.
 
-Overall, the findings suggest that although these roles share core programming and database skills, Data Analysts focus more on analysis and visualization, Data Scientists on machine learning and statistical methods, and Data Engineers on data infrastructure and processing technologies.
+Overall, the findings suggest that while all three roles share important technical skills, their priorities differ. Data Analysts focus more on analysis and visualization, Data Scientists on machine learning and statistical methods, and Data Engineers on data infrastructure and processing technologies.
 
 ## Limitations
 
