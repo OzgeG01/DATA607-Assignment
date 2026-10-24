@@ -21,6 +21,8 @@ We will use the frequency of skills mentioned in job postings as our measure of 
 
 **Group Members:** Ozge Gundogan, Antik Salimullah, Andre Thomson
 
+**Collaboration:** We plan to use Gmail for group communication and GitHub for sharing code, documentation, and version control.
+
 # Planned Approach
 
 We will use the "Data Science Job Postings & Skills (2024)" dataset from Kaggle for this project.
@@ -64,8 +66,6 @@ erDiagram
 ```
 
 We will analyze the frequency of technical skills mentioned in job postings to identify the most frequently requested skills. We will also compare skill demand across three job categories: Data Analyst, Data Engineer, and Data Scientist. We will calculate the percentage of job postings requiring each skill within each job category to make comparisons more meaningful. We will then use the ggplot2 package in R to visualize the results.
-
-We plan to use Gmail for group communication and GitHub for sharing code, documentation, and version control.
 
 # Anticipated Challenges
 
@@ -512,26 +512,35 @@ non_technical_skills <- c(
 )
 ```
 
-We will use SQL to count the number of unique job postings mentioning each skill and calculate its percentage of total job postings. After excluding the non-technical categories identified above, we will select the 10 most frequently requested technical skills.
+We will load the Jobs, Skills, and Job_Skills tables from our SQLite database into R.
 
 ```{r}
-technical_skills <- dbGetQuery(con, "
-  SELECT
-    s.skill_name,
-    COUNT(DISTINCT js.job_link) AS job_count,
-    ROUND(
-      100.0 * COUNT(DISTINCT js.job_link) /
-      (SELECT COUNT(*) FROM Jobs), 2
-    ) AS percentage
-  FROM Job_Skills js
-  JOIN Skills s ON js.skill_id = s.skill_id
-  GROUP BY s.skill_name
-  ORDER BY job_count DESC
-") %>%
-  filter(!skill_name %in% non_technical_skills) %>%
-  head(10)
+jobs_r <- dbReadTable(con, "Jobs")
+skills_r <- dbReadTable(con, "Skills")
+job_skills_r <- dbReadTable(con, "Job_Skills")
 
-technical_skills
+total_jobs <- nrow(jobs_r)
+```
+
+We will join the job-skill relationships with the skill names and exclude non-technical skills. Then, we will count the number of unique job postings requesting each skill, calculate their percentages, and select the 10 most frequently requested technical skills.
+
+```{r}
+technical_skills <- job_skills_r %>%
+  left_join(skills_r, by = "skill_id") %>%
+  filter(!skill_name %in% non_technical_skills) %>%
+  group_by(skill_name) %>%
+  summarise(
+    job_count = n_distinct(job_link),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    percentage = round(100 * job_count / total_jobs, 2)
+  ) %>%
+  arrange(desc(job_count), skill_name) %>%
+  slice_head(n = 10)
+
+technical_skills %>%
+  mutate(percentage = sprintf("%.2f", percentage))
 ```
 
 The results show that Python is the most frequently requested technical skill (38.94%), followed by SQL (37.01%), data analysis (26.42%), machine learning (21.55%), and data visualization (18.56%). Other frequently requested skills include AWS, data engineering, Tableau, R, and data modeling. Overall, these findings suggest that employers place strong emphasis on programming, data analysis, and data management capabilities.
@@ -540,13 +549,13 @@ We will use a horizontal bar chart to visualize the 10 most frequently requested
 
 ```{r}
 ggplot(
-  head(technical_skills, 10),
+  technical_skills,
   aes(x = reorder(skill_name, percentage),
       y = percentage)
 ) +
   geom_col(fill = "steelblue") +
   geom_text(
-    aes(label = paste0(percentage, "%")),
+    aes(label = sprintf("%.2f%%", percentage)),
     hjust = -0.2,
     size = 3.5
   ) +
@@ -564,27 +573,21 @@ ggplot(
 
 ### Technical Skill Demand by Job Role
 
-We will separately analyze job postings for three positions: Data Analyst, Data Scientist, and Data Engineer. For each position, we will identify the most frequently requested technical skills and compare their demand across the three roles.
-
-We will use SQL to count the job postings for Data Analyst, Data Scientist, and Data Engineer positions. Job titles containing these terms will be included regardless of experience level, such as Junior, Senior, or Lead.
+We will classify job postings into three groups based on their job titles: Data Analyst, Data Scientist, and Data Engineer. Job titles containing these terms will be included regardless of experience level, such as Junior, Senior, or Lead. We will then count the number of job postings in each group.
 
 ```{r}
-role_counts <- dbGetQuery(con, "
-  SELECT
-    CASE
-      WHEN LOWER(job_title) LIKE '%data analyst%' THEN 'Data Analyst'
-      WHEN LOWER(job_title) LIKE '%data scientist%' THEN 'Data Scientist'
-      WHEN LOWER(job_title) LIKE '%data engineer%' THEN 'Data Engineer'
-    END AS job_role,
-    COUNT(*) AS job_count
-  FROM Jobs
-  WHERE
-    LOWER(job_title) LIKE '%data analyst%'
-    OR LOWER(job_title) LIKE '%data scientist%'
-    OR LOWER(job_title) LIKE '%data engineer%'
-  GROUP BY job_role
-  ORDER BY job_count DESC
-")
+role_counts <- jobs_r %>%
+  mutate(
+    job_role = case_when(
+      grepl("data analyst", job_title, ignore.case = TRUE) ~ "Data Analyst",
+      grepl("data scientist", job_title, ignore.case = TRUE) ~ "Data Scientist",
+      grepl("data engineer", job_title, ignore.case = TRUE) ~ "Data Engineer",
+      TRUE ~ NA_character_
+    )
+  ) %>%
+  filter(!is.na(job_role)) %>%
+  count(job_role, name = "job_count") %>%
+  arrange(desc(job_count))
 
 role_counts
 ```
@@ -596,27 +599,28 @@ The results show that Data Analyst has the highest number of job postings (1,888
 We will identify the 10 most frequently requested technical skills in Data Analyst job postings. Skill demand will be measured as the percentage of Data Analyst postings mentioning each skill, including Junior and Senior positions.
 
 ```{r}
-data_analyst_skills <- dbGetQuery(con, "
-  SELECT
-    s.skill_name,
-    COUNT(DISTINCT js.job_link) AS job_count,
-    ROUND(
-      100.0 * COUNT(DISTINCT js.job_link) /
-      (SELECT COUNT(*)
-       FROM Jobs
-       WHERE LOWER(job_title) LIKE '%data analyst%'), 2
-    ) AS percentage
-  FROM Jobs j
-  JOIN Job_Skills js ON j.job_link = js.job_link
-  JOIN Skills s ON js.skill_id = s.skill_id
-  WHERE LOWER(j.job_title) LIKE '%data analyst%'
-  GROUP BY s.skill_name
-  ORDER BY job_count DESC
-") %>%
-  filter(!skill_name %in% non_technical_skills) %>%
-  head(10)
+data_analyst_jobs <- jobs_r %>%
+  filter(grepl("data analyst", job_title, ignore.case = TRUE))
 
-data_analyst_skills
+data_analyst_skills <- job_skills_r %>%
+  semi_join(data_analyst_jobs, by = "job_link") %>%
+  left_join(skills_r, by = "skill_id") %>%
+  filter(!skill_name %in% non_technical_skills) %>%
+  group_by(skill_name) %>%
+  summarise(
+    job_count = n_distinct(job_link),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    percentage = round(
+      100 * job_count / nrow(data_analyst_jobs), 2
+    )
+  ) %>%
+  arrange(desc(job_count), skill_name) %>%
+  slice_head(n = 10)
+
+data_analyst_skills %>%
+  mutate(percentage = sprintf("%.2f", percentage))
 ```
 
 The results show that data analysis (69.23%) is the most frequently requested skill for Data Analyst positions, followed by SQL (61.28%) and data visualization (51.75%). Python (43.06%) and Tableau (38.72%) are also among the top five. Power BI, R, and Excel are frequently mentioned, highlighting the importance of data analysis, querying, and visualization skills for this role.
@@ -653,27 +657,28 @@ ggplot(
 We will identify the 10 most frequently requested technical skills in Data Scientist job postings. Skill demand will be calculated as the percentage of Data Scientist postings mentioning each skill, including Junior and Senior positions.
 
 ```{r}
-data_scientist_skills <- dbGetQuery(con, "
-  SELECT
-    s.skill_name,
-    COUNT(DISTINCT js.job_link) AS job_count,
-    ROUND(
-      100.0 * COUNT(DISTINCT js.job_link) /
-      (SELECT COUNT(*)
-       FROM Jobs
-       WHERE LOWER(job_title) LIKE '%data scientist%'), 2
-    ) AS percentage
-  FROM Jobs j
-  JOIN Job_Skills js ON j.job_link = js.job_link
-  JOIN Skills s ON js.skill_id = s.skill_id
-  WHERE LOWER(j.job_title) LIKE '%data scientist%'
-  GROUP BY s.skill_name
-  ORDER BY job_count DESC
-") %>%
-  filter(!skill_name %in% non_technical_skills) %>%
-  head(10)
+data_scientist_jobs <- jobs_r %>%
+  filter(grepl("data scientist", job_title, ignore.case = TRUE))
 
-data_scientist_skills
+data_scientist_skills <- job_skills_r %>%
+  semi_join(data_scientist_jobs, by = "job_link") %>%
+  left_join(skills_r, by = "skill_id") %>%
+  filter(!skill_name %in% non_technical_skills) %>%
+  group_by(skill_name) %>%
+  summarise(
+    job_count = n_distinct(job_link),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    percentage = round(
+      100 * job_count / nrow(data_scientist_jobs), 2
+    )
+  ) %>%
+  arrange(desc(job_count), skill_name) %>%
+  slice_head(n = 10)
+
+data_scientist_skills %>%
+  mutate(percentage = sprintf("%.2f", percentage))
 ```
 
 The results show that Python (83.44%) is the most frequently requested technical skill for Data Scientist positions, followed by machine learning (73.42%) and SQL (57.97%). R (48.70%) and data visualization (37.95%) complete the top five. Statistics (36.46%) is also frequently requested, highlighting the importance of programming, machine learning, and statistical analysis for this role.
@@ -710,27 +715,28 @@ ggplot(
 We will identify the 10 most frequently requested technical skills in Data Engineer job postings. Skill demand will be calculated as the percentage of Data Engineer postings mentioning each skill, including Junior and Senior positions.
 
 ```{r}
-data_engineer_skills <- dbGetQuery(con, "
-  SELECT
-    s.skill_name,
-    COUNT(DISTINCT js.job_link) AS job_count,
-    ROUND(
-      100.0 * COUNT(DISTINCT js.job_link) /
-      (SELECT COUNT(*)
-       FROM Jobs
-       WHERE LOWER(job_title) LIKE '%data engineer%'), 2
-    ) AS percentage
-  FROM Jobs j
-  JOIN Job_Skills js ON j.job_link = js.job_link
-  JOIN Skills s ON js.skill_id = s.skill_id
-  WHERE LOWER(j.job_title) LIKE '%data engineer%'
-  GROUP BY s.skill_name
-  ORDER BY job_count DESC
-") %>%
-  filter(!skill_name %in% non_technical_skills) %>%
-  head(10)
+data_engineer_jobs <- jobs_r %>%
+  filter(grepl("data engineer", job_title, ignore.case = TRUE))
 
-data_engineer_skills
+data_engineer_skills <- job_skills_r %>%
+  semi_join(data_engineer_jobs, by = "job_link") %>%
+  left_join(skills_r, by = "skill_id") %>%
+  filter(!skill_name %in% non_technical_skills) %>%
+  group_by(skill_name) %>%
+  summarise(
+    job_count = n_distinct(job_link),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    percentage = round(
+      100 * job_count / nrow(data_engineer_jobs), 2
+    )
+  ) %>%
+  arrange(desc(job_count), skill_name) %>%
+  slice_head(n = 10)
+
+data_engineer_skills %>%
+  mutate(percentage = sprintf("%.2f", percentage))
 ```
 
 The results show that Python (73.47%) is the most frequently requested technical skill for Data Engineer positions, followed by SQL (63.09%) and data engineering (51.63%). Spark (40.79%) and Java (37.76%) complete the top five. AWS, Scala, Snowflake, data warehousing, and Hadoop are also frequently requested, highlighting the importance of programming, cloud technologies, and large-scale data processing for this role.
