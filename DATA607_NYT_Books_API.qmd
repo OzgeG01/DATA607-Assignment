@@ -1,0 +1,45 @@
+---
+title: "NYT Books API Analysis"
+author: "Ozge Gundogan"
+date: 2026-10-29
+format: html
+editor: visual
+---
+
+# Introduction
+
+The New York Times Books API provides information about books on The New York Times Best Sellers lists, including book titles, authors, rankings, and the number of weeks each book has appeared on a list.
+
+For this assignment, I will use the Books API to explore the Hardcover Fiction Best Sellers list. My goal is to identify the top 10 best-selling books and examine which books have spent the most weeks on the current list.
+
+I will focus on two research questions:
+
+- What are the top 10 best-selling hardcover fiction books on The New York Times Best Sellers list?
+
+- Which books have spent the most weeks on The New York Times Hardcover Fiction Best Sellers list?
+
+I will use R to retrieve the data, process the JSON response, and organize the results into a clean data frame to answer these questions.
+
+# Planned Approach
+
+I will use the New York Times Books API to retrieve the latest available Hardcover Fiction Best Sellers list.
+
+**API Endpoint:** https://api.nytimes.com/svc/books/v3/lists/current/hardcover-fiction.json
+
+I will send a GET request in R using an API key stored in an environment variable instead of including it directly in the code.
+
+After retrieving the data, I will use the jsonlite package to parse the JSON response and extract the book information. I will create a tidy data frame containing book titles, authors, rankings, and the number of weeks each book has spent on the list.
+
+I will check for missing values, empty strings, and data types to make sure the data is ready for analysis. I will select only the relevant columns and arrange the data based on the research questions.
+
+To answer the first question, I will identify the top 10 books based on their current rankings. For the second question, I will compare the number of weeks each book has spent on the list to identify the longest-running bestsellers among the books in the current list.
+
+Finally, I will summarize the findings and use the results to answer both research questions.
+
+# Anticipated Challenges
+
+One possible challenge will be connecting to the New York Times Books API and making sure the API request works correctly. I will need to store my API key securely and check the response status to identify any potential errors.
+
+Another challenge may be extracting the necessary information from the nested fields in the JSON response. I will need to select the relevant columns and organize the data into a tidy data frame.
+
+I will also need to check for missing values and incorrect data types to make sure the data is suitable for analysis.
