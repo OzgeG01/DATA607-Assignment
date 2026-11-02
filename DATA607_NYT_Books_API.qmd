@@ -43,3 +43,175 @@ One possible challenge will be connecting to the New York Times Books API and ma
 Another challenge may be extracting the necessary information from the nested fields in the JSON response. I will need to select the relevant columns and organize the data into a tidy data frame.
 
 I will also need to check for missing values and incorrect data types to make sure the data is suitable for analysis.
+
+# Code Base
+
+## Load Required Packages
+
+In this section, I will load the R packages needed to work with the New York Times Books API. I will use httr to send API requests, jsonlite to process JSON data, and dplyr to clean and organize the data.
+
+```{r}
+library(httr)
+library(jsonlite)
+library(dplyr)
+```
+
+## API Authentication
+
+I will retrieve my New York Times API key from an environment variable using Sys.getenv(). This allows me to authenticate API requests without including the key directly in my code.
+
+```{r}
+api_key <- Sys.getenv("NYT_API_KEY")
+
+if (api_key == "") {
+  stop("NYT_API_KEY is not set.")
+}
+```
+
+## Request Data from the NYT Books API
+
+I will use the New York Times Books API to retrieve the latest available Hardcover Fiction Best Sellers list. I will send a GET request using the httr package and include my API key as a query parameter. I will also check the response status to make sure the request was successful.
+
+```{r}
+url <- "https://api.nytimes.com/svc/books/v3/lists/current/hardcover-fiction.json"
+
+response <- GET(
+  url,
+  query = list("api-key" = api_key)
+)
+
+stop_for_status(response)
+
+status_code(response)
+```
+
+## API Endpoint and Request Parameters
+
+I used the New York Times Books API to retrieve the latest available Hardcover Fiction Best Sellers list.
+
+**Endpoint:** https://api.nytimes.com/svc/books/v3/lists/current/hardcover-fiction.json
+
+The endpoint uses current to retrieve the latest available list and hardcover-fiction to select the Hardcover Fiction category.
+
+I used the api-key query parameter for authentication. The API key was stored in an environment variable instead of being included directly in the code.
+
+The API request returned an HTTP status code of 200, indicating that the request was successful.
+
+## Parse the JSON Response
+
+In this section, I will convert the JSON response from the New York Times Books API into an R object using the jsonlite package. This will allow me to access the book information for further processing and analysis.
+
+```{r}
+nyt_data <- fromJSON(
+  content(response, as = "text", encoding = "UTF-8")
+)
+```
+
+I will examine the structure of the JSON data to understand how the information is organized and identify the fields needed for my analysis.
+
+```{r}
+str(nyt_data, max.level = 2)
+```
+
+## Examine the Book Data
+
+I will extract the book data from the JSON response and examine its column names. This will help me identify the variables needed to answer my research questions.
+
+```{r}
+books_data <- nyt_data$results$books
+
+names(books_data)
+```
+
+## Create a Tidy Data Frame
+
+I will select the columns needed for my analysis: book title, author, rank, and weeks on the bestseller list. I will then arrange the books by their current rankings.
+
+```{r}
+books_clean <- books_data %>%
+  select(title, author, rank, weeks_on_list) %>%
+  arrange(rank)
+
+print(books_clean)
+```
+
+## Check for Missing Values
+
+I will check for missing values in each column of the cleaned data frame to identify any incomplete information.
+
+```{r}
+colSums(is.na(books_clean))
+```
+
+I will check for empty strings in the text columns. Empty strings may represent missing information even when they are not identified as NA values.
+
+```{r}
+colSums(books_clean[c("title", "author")] == "")
+```
+
+## Check Data Types
+
+I will examine the data types of each column to make sure that book titles and authors are stored as text, while rankings and weeks on the list are stored as numeric values.
+
+```{r}
+str(books_clean)
+```
+
+## Data Cleaning Summary
+
+The original API response contained nested JSON data. I extracted the book information and selected four columns relevant to my research questions: title, author, rank, and weeks_on_list.
+
+I checked for missing values and empty strings, but none were found. I also verified the data types. Book titles and authors were stored as character values, while rankings and weeks on the list were stored as integers. Therefore, no missing-value removal or data type conversion was necessary.
+
+## Top 10 Best-Selling Hardcover Fiction Books
+
+I will identify the top 10 best-selling hardcover fiction books based on their current rankings. I will use the cleaned data frame and select the first 10 books from the list.
+
+```{r}
+top_10_books <- books_clean %>%
+  arrange(rank) %>%
+  slice_head(n = 10)
+
+print(top_10_books)
+```
+
+The results show that "Threshing Day" by Rebecca Yarros ranks first on The New York Times Hardcover Fiction Best Sellers list, followed by "Miss Wolcott's Ghost" by Louise Penny and "A Married Little Christmas" by Abby Jimenez.
+
+Among the top 10 books, "The Calamity Club" by Kathryn Stockett has spent the most time on the list, with 25 weeks, despite ranking ninth. Several other books have appeared on the list for only one week.
+
+These findings suggest that a book's current ranking does not necessarily reflect how long it has remained on the bestseller list.
+
+## Books with the Most Weeks on the Bestseller List
+
+I will compare the number of weeks each book has spent on the Hardcover Fiction Best Sellers list. I will sort the books by weeks_on_list in descending order to identify which books have remained on the list the longest.
+
+```{r}
+books_by_weeks <- books_clean %>%
+  arrange(desc(weeks_on_list))
+
+print(books_by_weeks)
+```
+
+The results show that "The Dungeon Anarchist's Cookbook" by Matt Dinniman has spent the most time on the current Hardcover Fiction Best Sellers list, with 32 weeks, followed by "The Calamity Club" by Kathryn Stockett with 25 weeks and "The Gate of the Feral Gods" by Matt Dinniman with 21 weeks.
+
+Interestingly, these three books are currently ranked 13th, 9th, and 14th, respectively. In comparison, the number-one bestseller, "Threshing Day" by Rebecca Yarros, has spent only four weeks on the list.
+
+These findings suggest that books can remain on the bestseller list for many weeks even when they are not among the highest-ranked titles. Current rankings and weeks on the list provide different information about a book's bestseller performance.
+
+# Conclusion
+
+In this assignment, I used the New York Times Books API to retrieve and analyze the latest available Hardcover Fiction Best Sellers list. I successfully collected the data, parsed the JSON response, and created a clean data frame in R.
+
+The results showed that "Threshing Day" by Rebecca Yarros ranked first, while "The Dungeon Anarchist's Cookbook" by Matt Dinniman had spent the most weeks on the current list, with 32 weeks.
+
+Overall, the analysis showed that a book's current ranking does not necessarily reflect how long it has remained on the bestseller list. The Books API provided a useful way to explore these differences using real-world data.
+
+# Citation
+
+I used ChatGPT (GPT-5.6 Luna), developed by OpenAI, to help me understand some of the functions I used in this assignment and to check my work.
+
+OpenAI. (2026). ChatGPT (GPT-5.6 Luna) \[Large language model\]. \[<https://chatgpt.com/> Accessed October 29, 2026\].
+
+# Video Explainer
+
+Link:
