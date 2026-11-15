@@ -1,0 +1,25 @@
+---
+title: "Sentiment Analysis of Sephora Skincare Reviews"
+author: "Ozge Gundogan"
+date: 2026-11-14
+format: html
+editor: visual
+---
+
+# Introduction
+
+Sentiment analysis is a method used to identify positive and negative opinions in text. It can help us understand how people express their feelings in books, customer reviews, and other written content.
+
+For this assignment, I will first reproduce and adapt a sentiment analysis example from Chapter 2 of Text Mining with R: A Tidy Approach by Julia Silge and David Robinson. I will use Jane Austen's novels and the Bing sentiment lexicon to examine positive and negative words.
+
+Next, I will apply sentiment analysis to a different dataset containing 40,234 Sephora skincare reviews from Kaggle. I chose this dataset because customer reviews include personal opinions about products, and I want to understand how these opinions relate to star ratings. I will use the Bing and AFINN sentiment lexicons to analyze the reviews and compare their results. My goal is to see whether higher star ratings are associated with more positive sentiment.
+
+# Planned Approach
+
+I will use R and the tidytext package to complete this analysis. First, I will use the Jane Austen dataset from the janeaustenr package. I will split the novels into individual words using the unnest_tokens() function. Then, I will use the Bing lexicon to identify positive and negative words. I will count these words, calculate net sentiment scores, and create charts to examine sentiment patterns across the novels.
+
+Next, I will download the Sephora skincare reviews dataset from GitHub. I will check the column names, missing values, and customer star ratings. I will also clean special characters and split the review text into individual words. After preparing the data, I will use the Bing lexicon to count positive and negative words. I will compare sentiment percentages across star ratings and create bar charts to visualize the results. I will also use the AFINN lexicon as a second method. AFINN gives sentiment words scores from -5 to +5. I will calculate sentiment scores for customer reviews and compare the average scores across star ratings. Finally, I will compare the Bing and AFINN results, discuss the main findings, and explain the limitations of the analysis.
+
+# Anticipated Challenges
+
+One challenge may be cleaning the text data. Customer reviews may contain special characters, punctuation, and spelling mistakes. These problems may cause errors when splitting the text into individual words. Sentiment analysis also has some limitations. A word may have different meanings depending on the sentence. For example, a negative word may appear in a review that is generally positive.
