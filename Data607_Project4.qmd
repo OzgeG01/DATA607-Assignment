@@ -1,0 +1,29 @@
+---
+title: "Email Spam Classification Using Machine Learning"
+author: "Ozge Gundogan"
+date: 2026-11-19
+format: html
+editor: visual
+---
+
+# 1. Introduction
+
+Email spam is a common problem for internet users. Spam emails often contain advertisements, unwanted messages, or suspicious links. Identifying these emails is important because spam filters help users keep their inboxes organized and protect them from unwanted content.
+
+In this project, I will use machine learning to classify emails as spam or ham (normal emails). I will use the SpamAssassin public dataset, which contains labeled examples of both spam and ham emails.
+
+**Research Question:** How accurately can a machine learning model classify emails as spam or ham based on their text?
+
+To answer this question, I will use a Naive Bayes classification model. I will also evaluate the model's performance by measuring accuracy, precision, recall, and F1-score. In addition, I will examine false positives and false negatives to understand the types of errors the model makes.
+
+**Data Source:** <https://spamassassin.apache.org/old/publiccorpus/>
+
+# 2. Planned Approach
+
+I will use R to analyze email data and build a machine learning model. First, I will collect spam and ham emails from the SpamAssassin public dataset. I will organize the data and explore the differences between spam and normal emails. Next, I will clean the email text by removing unnecessary information, such as HTML tags, links, and punctuation. I will also examine the most common words in each category.
+
+After cleaning the data, I will divide it into training and testing sets. I plan to use a Naive Bayes classification model to predict whether an email is spam or ham. Finally, I will evaluate the model using accuracy, precision, recall, and F1-score. I will also create graphs to present my findings and discuss the challenges and limitations of the project.
+
+# 3. Anticipated Challenges
+
+One challenge is cleaning the email text. The original emails contain headers, HTML tags, URLs, and other information that may not be useful for classification. Removing these elements is important to prepare the data for analysis. Another challenge is selecting useful words for the classification model. Some words appear many times in a single email but are not common across different emails. To address this, I will use document frequency to select words that appear in multiple emails.
