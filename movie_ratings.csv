@@ -1,0 +1,61 @@
+﻿name;movie_id;title;rating
+Deniz;1;Inception;5
+Koray;1;Inception;5
+Okan;1;Inception;4
+Pelin;1;Inception;NA
+Serpil;1;Inception;5
+Azra;1;Inception;4
+Derya;1;Inception;5
+Erkan;1;Inception;NA
+Can;1;Inception;5
+Yeliz;1;Inception;5
+Deniz;2;Interstellar;NA
+Koray;2;Interstellar;5
+Okan;2;Interstellar;5
+Pelin;2;Interstellar;5
+Serpil;2;Interstellar;5
+Azra;2;Interstellar;5
+Derya;2;Interstellar;5
+Erkan;2;Interstellar;5
+Can;2;Interstellar;5
+Yeliz;2;Interstellar;5
+Deniz;3;Barbie;3
+Koray;3;Barbie;4
+Okan;3;Barbie;NA
+Pelin;3;Barbie;3
+Serpil;3;Barbie;NA
+Azra;3;Barbie;4
+Derya;3;Barbie;2
+Erkan;3;Barbie;NA
+Can;3;Barbie;NA
+Yeliz;3;Barbie;5
+Deniz;4;Oppenheimer;5
+Koray;4;Oppenheimer;4
+Okan;4;Oppenheimer;5
+Pelin;4;Oppenheimer;4
+Serpil;4;Oppenheimer;5
+Azra;4;Oppenheimer;4
+Derya;4;Oppenheimer;NA
+Erkan;4;Oppenheimer;4
+Can;4;Oppenheimer;4
+Yeliz;4;Oppenheimer;4
+Deniz;5;Parasite;4
+Koray;5;Parasite;3
+Okan;5;Parasite;5
+Pelin;5;Parasite;4
+Serpil;5;Parasite;5
+Azra;5;Parasite;NA
+Derya;5;Parasite;NA
+Erkan;5;Parasite;5
+Can;5;Parasite;4
+Yeliz;5;Parasite;5
+Deniz;6;Inside Out;3
+Koray;6;Inside Out;NA
+Okan;6;Inside Out;4
+Pelin;6;Inside Out;NA
+Serpil;6;Inside Out;3
+Azra;6;Inside Out;3
+Derya;6;Inside Out;5
+Erkan;6;Inside Out;NA
+Can;6;Inside Out;4
+Yeliz;6;Inside Out;NA
