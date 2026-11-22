@@ -1,0 +1,1112 @@
+---
+title: "Sentiment Analysis of Sephora Skincare Reviews"
+author: "Ozge Gundogan"
+date: 2026-11-14
+format: html
+editor: visual
+---
+
+# 1. Introduction
+
+Sentiment analysis is a method used to identify positive and negative opinions in text. It helps us understand how people express their feelings in books, customer reviews, and other written content.
+
+In this assignment, I will first reproduce the sentiment analysis examples from Chapter 2 of Text Mining with R: A Tidy Approach by Julia Silge and David Robinson. I will use Jane Austen's novels and three sentiment lexicons (Bing, AFINN, and NRC) to examine sentiment patterns in literary texts.
+
+Next, I will apply sentiment analysis to a different dataset containing 40,234 Sephora skincare reviews from Kaggle. I chose this dataset because customer reviews contain personal opinions about products, and I want to understand how these opinions relate to star ratings. After removing duplicate records, I will analyze 18,556 unique reviews using four sentiment lexicons: Bing, AFINN, NRC, and SentiWordNet.
+
+My goal is to compare how these lexicons classify customer reviews and understand why they may produce different results.
+
+# 2. Planned Approach
+
+I will use R and the tidytext package to complete this analysis. First, I will load Jane Austen's novels from the janeaustenr package and split the text into individual words using the unnest_tokens() function. Then, I will use Bing, AFINN, and NRC to identify sentiment words, calculate sentiment scores, and create charts to examine sentiment patterns throughout the novels.
+
+Next, I will download the Sephora skincare reviews dataset from GitHub. I will check the dataset structure, missing values, and duplicate reviews. I will remove duplicate records, clean special characters, and split the review text into individual words.
+
+After preparing the data, I will use the Bing lexicon to count positive and negative words and calculate net sentiment scores for each review. I will also use AFINN to calculate numerical sentiment scores and compare the results with customer star ratings.
+
+Then, I will use NRC to examine different emotions, such as joy, trust, anger, and sadness. I will also use SentiWordNet as an additional sentiment lexicon to calculate sentiment scores based on positive and negative word scores.
+
+Finally, I will compare the results from all four lexicons using tables and charts. I will also compare my analysis with the original Jane Austen example, discuss the main findings, and explain the limitations of sentiment analysis.
+
+**Data Source:** <https://www.kaggle.com/datasets/natashamessier/sephora-skincare-reviews-and-sentiment>
+
+# 3. Anticipated Challenges
+
+One challenge may be cleaning the text data. Customer reviews may contain special characters, punctuation, spelling mistakes, and duplicate records. These problems may affect the accuracy of sentiment analysis.
+
+Another challenge may be comparing different sentiment lexicons. Bing classifies words as positive or negative, while NRC also includes different emotion categories. AFINN and SentiWordNet use numerical scores to measure sentiment. Because these lexicons use different methods and vocabularies, they may produce different results for the same review.
+
+Sentiment analysis also has some limitations. A word may have different meanings depending on its context. For example, a negative word may appear in a review that is generally positive. Lexicon-based methods may also have difficulty understanding sarcasm, negation, and skincare-specific expressions.
+
+# 4. Code Base
+
+## 4.1 Load Required Packages
+
+I will load the R packages needed for this analysis. These packages will help me work with text data, analyze sentiment, and create visualizations.
+
+```{r}
+library(tidytext)
+library(janeaustenr)
+library(dplyr)
+library(stringr)
+library(tidyr)
+library(ggplot2)
+library(wordcloud)
+library(reshape2)
+library(lexicon)
+```
+
+## 4.2 Reproduce the Original Example
+
+In this section, I will reproduce the sentiment analysis examples from Chapter 2 of Text Mining with R: A Tidy Approach by Julia Silge and David Robinson (2017). I will follow the original code and analysis steps presented in the book.
+
+### 4.2.1 The Sentiment Datasets
+
+First, I will examine the three sentiment lexicons introduced in the book: AFINN, Bing, and NRC.
+
+```{r}
+get_sentiments("afinn")
+```
+
+```{r}
+get_sentiments("bing")
+```
+
+```{r}
+get_sentiments("nrc")
+```
+
+The three sentiment lexicons have different structures and methods for classifying words.
+
+\- AFINN contains 2,477 entries and assigns numerical sentiment scores from -5 to +5.\
+- Bing contains 6,786 entries and classifies words as positive or negative.\
+- NRC contains 13,872 entries and classifies words into positive and negative sentiments, as well as eight emotion categories, such as joy, fear, anger, and sadness.
+
+These differences may lead to different sentiment analysis results, even when the same text is used.
+
+### 4.2.2 Sentiment Analysis with Inner Join
+
+#### 4.2.2.1 Prepare Jane Austen's Novels
+
+First, I will load Jane Austen's novels and convert the text into a tidy format. I will also add line and chapter numbers to keep track of the location of each word in the novels.
+
+```{r}
+tidy_books <- austen_books() %>%
+  group_by(book) %>%
+  mutate(
+    linenumber = row_number(),
+    chapter = cumsum(str_detect(text,
+                                regex("^chapter [\\divxlc]",
+                                      ignore_case = TRUE)))) %>%
+  ungroup() %>%
+  unnest_tokens(word, text)
+```
+
+#### 4.2.2.2 Most Common Joy Words in Emma
+
+I will use the NRC lexicon to identify the most common words associated with joy in the novel Emma.
+
+```{r}
+nrc_joy <- get_sentiments("nrc") %>%
+  filter(sentiment == "joy")
+
+tidy_books %>%
+  filter(book == "Emma") %>%
+  inner_join(nrc_joy) %>%
+  count(word, sort = TRUE)
+```
+
+The results show that "good" is the most common joy word in Emma, with 359 occurrences. It is followed by "friend" (166) and "hope" (143). Other common words include "happy", "love", and "happiness". These words are often related to positive feelings and personal relationships.
+
+#### 4.2.2.3 Calculate Net Sentiment in Jane Austen's Novels
+
+I will use the Bing lexicon to identify positive and negative words in Jane Austen's novels. I will divide each novel into sections of 80 lines and calculate the net sentiment score by subtracting the number of negative words from the number of positive words.
+
+```{r}
+jane_austen_sentiment <- tidy_books %>%
+  inner_join(get_sentiments("bing"),
+             by = "word",
+             relationship = "many-to-many") %>%
+  count(book, index = linenumber %/% 80, sentiment) %>%
+  pivot_wider(names_from = sentiment,
+              values_from = n,
+              values_fill = 0) %>%
+  mutate(sentiment = positive - negative)
+```
+
+#### 4.2.2.4 Visualize Sentiment Changes
+
+I will create bar charts to visualize how sentiment changes throughout each novel.
+
+```{r}
+ggplot(jane_austen_sentiment, aes(index, sentiment, fill = book)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~book, ncol = 2, scales = "free_x")
+```
+
+The charts show how sentiment changes throughout Jane Austen's six novels. Positive sentiment scores are more common, but all six novels also have sections with negative scores. Mansfield Park and Northanger Abbey show noticeable negative sentiment in some sections. These results show that sentiment is not constant and changes as each story progresses.
+
+### 4.2.3 Comparing the Three Sentiment Dictionaries
+
+#### 4.2.3.1 Select Pride and Prejudice
+
+I will select Pride and Prejudice from the Jane Austen dataset to compare the three sentiment lexicons using the same novel.
+
+```{r}
+pride_prejudice <- tidy_books %>%
+  filter(book == "Pride & Prejudice")
+
+pride_prejudice
+```
+
+#### 4.2.3.2 Sentiment Analysis Using AFINN
+
+I will use the AFINN lexicon to calculate sentiment scores for each section of 80 lines. I will add the individual word scores to calculate the total sentiment score for each section.
+
+```{r}
+afinn <- pride_prejudice %>%
+  inner_join(get_sentiments("afinn"), by = "word") %>%
+  group_by(index = linenumber %/% 80) %>%
+  summarise(sentiment = sum(value)) %>%
+  mutate(method = "AFINN")
+```
+
+#### 4.2.3.3 Sentiment Analysis Using Bing and NRC
+
+I will use the Bing and NRC lexicons to count positive and negative words in each section. Then, I will calculate the net sentiment score by subtracting the number of negative words from the number of positive words.
+
+```{r}
+bing_and_nrc <- bind_rows(
+  pride_prejudice %>%
+    inner_join(get_sentiments("bing"), by = "word") %>%
+    mutate(method = "Bing et al."),
+  
+  pride_prejudice %>%
+    inner_join(get_sentiments("nrc") %>%
+                 filter(sentiment %in% c("positive",
+                                         "negative")),
+               by = "word",
+               relationship = "many-to-many") %>%
+    mutate(method = "NRC")) %>%
+  count(method, index = linenumber %/% 80, sentiment) %>%
+  pivot_wider(names_from = sentiment,
+              values_from = n,
+              values_fill = 0) %>%
+  mutate(sentiment = positive - negative)
+```
+
+#### 4.2.3.4 Visualize the Three Sentiment Lexicons
+
+I will combine the results from AFINN, Bing, and NRC and create bar charts to compare sentiment changes throughout the novel.
+
+```{r}
+bind_rows(afinn,
+          bing_and_nrc) %>%
+  ggplot(aes(index, sentiment, fill = method)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~method, ncol = 1, scales = "free_y")
+```
+
+The three sentiment lexicons show similar patterns throughout the novel, but their sentiment scores are different. AFINN produces a wider range of scores because it assigns numerical values to words. NRC shows mostly positive sentiment, while Bing identifies more sections with negative sentiment. These results show that different sentiment lexicons can produce different results for the same text.
+
+#### 4.2.3.5 Compare Positive and Negative Words in the Lexicons
+
+I will compare the number of positive and negative words in the NRC and Bing lexicons to better understand why the sentiment scores may be different.
+
+NRC:
+
+```{r}
+get_sentiments("nrc") %>%
+  filter(sentiment %in% c("positive", "negative")) %>%
+  count(sentiment)
+```
+
+Bing:
+
+```{r}
+get_sentiments("bing") %>%
+  count(sentiment)
+```
+
+Both lexicons contain more negative entries than positive entries. NRC contains 3,316 negative and 2,308 positive entries, while Bing contains 4,781 negative and 2,005 positive entries. Bing has a higher proportion of negative entries than NRC. This difference may help explain why Bing produces more negative sentiment results in the previous analysis.
+
+### 4.2.4 Most Common Positive and Negative Words
+
+#### 4.2.4.1 Count Positive and Negative Words
+
+I will use the Bing lexicon to identify positive and negative words in Jane Austen's novels. Then, I will count how frequently each word appears.
+
+```{r}
+bing_word_counts <- tidy_books %>%
+  inner_join(get_sentiments("bing"),
+             by = "word",
+             relationship = "many-to-many") %>%
+  count(word, sentiment, sort = TRUE) %>%
+  ungroup()
+
+bing_word_counts
+```
+
+The results show that "miss" is the most frequent sentiment word, with 1,855 occurrences. It is classified as negative by the Bing lexicon. The most common positive words are "well", "good", and "great". However, the meaning of a word may change depending on its context.
+
+#### 4.2.4.2 Visualize the Most Common Sentiment Words
+
+I will create bar charts to show the ten most common positive and negative words in Jane Austen's novels.
+
+```{r}
+bing_word_counts %>%
+  group_by(sentiment) %>%
+  slice_max(n, n = 10) %>%
+  ungroup() %>%
+  mutate(word = reorder(word, n)) %>%
+  ggplot(aes(n, word, fill = sentiment)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~sentiment, scales = "free_y") +
+  labs(x = "Contribution to sentiment",
+       y = NULL)
+```
+
+The charts show the ten most frequent positive and negative words in Jane Austen's novels. The word "miss" stands out among the negative words, while "well" and "good" are the most frequent positive words. The high frequency of "miss" suggests that some words may be incorrectly classified because of their context.
+
+#### 4.2.4.3 Create Custom Stop Words
+
+The word "miss" is classified as negative by the Bing lexicon. However, Jane Austen often uses this word as a title for unmarried women. I will add this word to a custom stop words list.
+
+```{r}
+custom_stop_words <- bind_rows(
+  tibble(word = c("miss"),
+         lexicon = c("custom")),
+  stop_words
+)
+
+custom_stop_words
+```
+
+The custom stop words list contains 1,150 entries, including the word "miss". Although the Bing lexicon classifies "miss" as negative, Jane Austen often uses it as a title for unmarried women. This example shows an important limitation of lexicon-based sentiment analysis. The same word can have different meanings depending on its context.
+
+### 4.2.5 Wordclouds
+
+#### 4.2.5.1 Create a Word Cloud
+
+I will remove common stop words from Jane Austen's novels and count the remaining words. Then, I will create a word cloud to display the 100 most common words.
+
+```{r}
+set.seed(123)
+
+tidy_books %>%
+  anti_join(stop_words, by = "word") %>%
+  count(word) %>%
+  with(wordcloud(word, n, max.words = 100))
+```
+
+The word cloud shows the most common words in Jane Austen's novels after removing common stop words. Larger words appear more frequently in the novels. This visualization helps us identify frequently used words and understand the general content of the novels. However, it does not show whether the words are positive or negative.
+
+#### 4.2.5.2 Create a Sentiment Comparison Word Cloud
+
+I will use the Bing lexicon to identify positive and negative words. Then, I will create a comparison word cloud to visualize the most common words in each sentiment group.
+
+```{r}
+set.seed(123)
+
+tidy_books %>%
+  inner_join(get_sentiments("bing"),
+             by = "word",
+             relationship = "many-to-many") %>%
+  count(word, sentiment, sort = TRUE) %>%
+  acast(word ~ sentiment, value.var = "n", fill = 0) %>%
+  comparison.cloud(colors = c("gray20", "gray80"),
+                   max.words = 100)
+```
+
+The comparison word cloud shows the most frequent positive and negative words in Jane Austen's novels. Words such as "well", "good", and "great" are common positive words, while "miss" stands out among the negative words. Unlike the previous word cloud, this visualization separates words based on their sentiment. However, as discussed earlier, the word "miss" may not always express negative sentiment in these novels.
+
+### 4.2.6 Other Units of Analysis
+
+#### 4.2.6.1 Tokenize Text into Sentences
+
+I will use the unnest_tokens() function to split Pride and Prejudice into sentences instead of individual words.
+
+```{r}
+p_and_p_sentences <- tibble(text = prideprejudice) %>%
+  unnest_tokens(sentence, text, token = "sentences")
+
+p_and_p_sentences$sentence[2]
+```
+
+The result shows that the text can be divided into sentences instead of individual words. Sentence-level analysis can provide more context than word-level analysis.
+
+#### 4.2.6.2 Split Novels into Chapters
+
+I will use a regular expression to split Jane Austen's novels into chapters. Each row will represent a section of the novel.
+
+```{r}
+austen_chapters <- austen_books() %>%
+  group_by(book) %>%
+  unnest_tokens(chapter, text, token = "regex",
+                pattern = "Chapter|CHAPTER [\\dIVXLC]") %>%
+  ungroup()
+```
+
+#### 4.2.6.3 Count Chapters in Each Novel
+
+I will count the number of chapter sections in each novel.
+
+```{r}
+austen_chapters %>%
+  group_by(book) %>%
+  summarise(chapters = n(), .groups = "drop")
+```
+
+The results show that Pride and Prejudice has the highest number of chapter sections (62), while Persuasion has the lowest (25). The counts include the introductory text before the first chapter. This structure allows us to analyze sentiment at the chapter level.
+
+#### 4.2.6.4 Identify Negative Words
+
+I will select only the negative words from the Bing sentiment lexicon.
+
+```{r}
+bingnegative <- get_sentiments("bing") %>%
+  filter(sentiment == "negative")
+```
+
+#### 4.2.6.5 Count Total Words in Each Chapter
+
+I will calculate the total number of words in each chapter. This will help me compare chapters of different lengths.
+
+```{r}
+wordcounts <- tidy_books %>%
+  group_by(book, chapter) %>%
+  summarise(words = n(), .groups = "drop")
+```
+
+#### 4.2.6.6 Identify the Most Negative Chapter in Each Novel
+
+I will count the negative words in each chapter and divide this number by the total word count. Then, I will identify the chapter with the highest proportion of negative words in each novel.
+
+```{r}
+tidy_books %>%
+  semi_join(bingnegative, by = "word") %>%
+  group_by(book, chapter) %>%
+  summarise(negativewords = n(), .groups = "drop") %>%
+  left_join(wordcounts, by = c("book", "chapter")) %>%
+  mutate(ratio = negativewords / words) %>%
+  filter(chapter != 0) %>%
+  group_by(book) %>%
+  slice_max(ratio, n = 1) %>%
+  ungroup()
+```
+
+The results show that Chapter 34 of Pride and Prejudice has the highest proportion of negative words among the selected chapters, at 5.28%. It is followed by Chapter 21 of Northanger Abbey, at 5.00%. Among the selected chapters, Chapter 4 of Persuasion has the lowest proportion, at 3.43%. Using proportions instead of total word counts allows us to compare chapters of different lengths more fairly.
+
+### 4.2.7 Summary
+
+I reproduced the sentiment analysis examples from Chapter 2 of Text Mining with R. I used the AFINN, Bing, and NRC sentiment lexicons to analyze Jane Austen's novels. The main findings are:
+
+\- Sentiment changes throughout each novel.\
+- Different sentiment lexicons can produce different results for the same text.\
+- Bing contains a higher proportion of negative entries than NRC.\
+- Word clouds help identify the most frequent words and visualize sentiment.\
+- Using proportions allows us to compare sentiment across chapters of different lengths.\
+- Lexicon-based sentiment analysis has some limitations because the meaning of a word can change depending on its context.
+
+These examples provide a foundation for the next part of my analysis, where I will use a different text dataset and an additional sentiment lexicon.
+
+## 4.3 Sentiment Analysis of Sephora Skincare Reviews
+
+### 4.3.1 Load the Dataset
+
+I will download the Sephora product review dataset from my GitHub repository. Since the dataset is stored in a ZIP file, I will extract the files and check their contents before loading the data into R.
+
+```{r}
+url <- "https://github.com/OzgeG01/DATA607-Assignment/raw/refs/heads/main/Sephora_product_review.zip"
+
+zip_file <- tempfile(fileext = ".zip")
+download.file(url, zip_file, mode = "wb")
+
+unzip(zip_file, exdir = tempdir())
+
+sephora_reviews <- read.csv(
+  file.path(tempdir(), "combined_product_review_data.csv"),
+  stringsAsFactors = FALSE,
+  encoding = "UTF-8"
+)
+
+head(sephora_reviews)
+```
+
+### 4.3.2 Explore the Dataset
+
+I will examine the structure of the Sephora dataset, including the number of rows and columns, column names, and data types. This step will help me identify the columns needed for sentiment analysis.
+
+```{r}
+dim(sephora_reviews)
+
+names(sephora_reviews)
+
+glimpse(sephora_reviews)
+```
+
+The dataset contains 40,234 customer reviews and 17 columns. It includes review text, customer ratings, product names, brands, categories, prices, and publication dates. The full_review column combines the review title and text, so I will use this column for sentiment analysis. I will also use the rating_value column to examine the relationship between customer ratings and sentiment scores. Although the dataset already contains sentiment labels and polarity scores, I will calculate my own sentiment scores using different sentiment lexicons.
+
+### 4.3.3 Data Cleaning and Preparation
+
+#### 4.3.3.1 Check Missing Values
+
+First, I will check for missing values and empty strings in the dataset. This step is important because missing or empty reviews cannot provide useful information for sentiment analysis.
+
+```{r}
+colSums(is.na(sephora_reviews))
+
+sephora_reviews %>%
+  summarise(across(
+    where(is.character),
+    ~ sum(trimws(.x) == "", na.rm = TRUE)
+  ))
+```
+
+The dataset does not contain any NA values. However, 8,264 reviews (20.54%) have empty titles. All other columns contain no empty values. Since the full_review column contains no missing or empty values, I will keep all reviews at this stage.
+
+#### 4.3.3.2 Check and Remove Duplicate Reviews
+
+I will check for duplicate review IDs to avoid analyzing the same review more than once.
+
+```{r}
+sum(duplicated(sephora_reviews$review_id))
+```
+
+I found 21,678 duplicate review IDs. I will check whether these duplicate records also contain identical review texts.
+
+```{r}
+sum(duplicated(sephora_reviews[c("review_id", "full_review")]))
+```
+
+The results show that 21,678 records have duplicate review IDs and identical review texts. These duplicate records represent approximately 53.88% of the dataset. I will remove these duplicates to avoid counting the same review more than once.
+
+I will remove duplicate reviews based on the review ID and full review text. Then, I will check the dimensions of the cleaned dataset.
+
+```{r}
+sephora_clean <- sephora_reviews %>%
+  distinct(review_id, full_review, .keep_all = TRUE)
+
+dim(sephora_clean)
+```
+
+After removing 21,678 duplicate records, the dataset contains 18,556 unique reviews and 17 columns. I will use this cleaned dataset for the remaining analysis.
+
+#### 4.3.3.3 Select Relevant Columns
+
+I will select the columns needed for sentiment analysis and convert the publication date into a date format. I will exclude the existing sentiment labels and polarity scores because I will calculate my own sentiment scores.
+
+```{r}
+sephora_clean <- sephora_clean %>%
+  select(review_id, date_published, rating_value,
+         full_review, name, brand, category) %>%
+  mutate(date_published = as.Date(date_published))
+
+glimpse(sephora_clean)
+```
+
+The cleaned dataset contains 18,556 unique customer reviews and seven relevant columns. The publication date was successfully converted to a date format. The dataset is now ready for text processing and sentiment analysis.
+
+#### 4.3.3.4 Normalize Text Characters
+
+I will standardize special punctuation characters and convert the review text to lowercase using English language rules. This step will help improve word matching with sentiment lexicons.
+
+```{r}
+sephora_clean <- sephora_clean %>%
+  mutate(
+    full_review = str_replace_all(full_review, "[\u2018\u2019]", "'"),
+    full_review = str_replace_all(full_review, "[\u201C\u201D]", '"'),
+    full_review = str_replace_all(full_review, "\u2026", "..."),
+    full_review = str_to_lower(full_review, locale = "en")
+  )
+
+head(sephora_clean$full_review, 3)
+```
+
+### 4.3.4 Tokenize the Reviews
+
+I will use the unnest_tokens() function to convert the customer reviews into a tidy text format. Each row will represent a single word from a customer review. This format will allow me to match individual words with different sentiment lexicons.
+
+```{r}
+sephora_words <- sephora_clean %>%
+  unnest_tokens(word, full_review, to_lower = FALSE)
+
+dim(sephora_words)
+
+head(sephora_words, 10)
+```
+
+### 4.3.5 Sentiment Analysis Using Bing
+
+#### 4.3.5.1 Identify Positive and Negative Words
+
+I will use the Bing sentiment lexicon to classify words as positive or negative. As in the original example, I will use the inner_join() function to match words in Sephora customer reviews with the Bing lexicon.
+
+```{r}
+sephora_bing <- sephora_words %>%
+  inner_join(get_sentiments("bing"),
+             by = "word",
+             relationship = "many-to-many")
+
+dim(sephora_bing)
+
+head(sephora_bing, 10)
+```
+
+The Bing lexicon successfully classified words from Sephora customer reviews as positive or negative. Words such as "great," "like," and "amazing" are classified as positive, while "miss," "hate," and "sticky" are classified as negative. However, some words, such as "thinner," are classified as positive even though they may express dissatisfaction in a skincare review. This shows that word meaning and context are important in sentiment analysis.
+
+#### 4.3.5.2 Examine and Visualize Sentiment Distribution
+
+I will count the positive and negative words and calculate their percentages to examine the overall sentiment distribution in Sephora customer reviews.
+
+```{r}
+bing_summary <- sephora_bing %>%
+  count(sentiment) %>%
+  mutate(percentage = round(n / sum(n) * 100, 2))
+
+bing_summary
+```
+
+I will create a bar chart to compare the number and percentage of positive and negative words identified by the Bing lexicon.
+
+```{r}
+ggplot(bing_summary, aes(x = sentiment, y = n, fill = sentiment)) +
+  geom_col(show.legend = FALSE, width = 0.6) +
+  geom_text(aes(label = paste0(scales::comma(n),
+                               "\n(", percentage, "%)")),
+            vjust = -0.5, size = 3.5) +
+  scale_fill_manual(values = c("negative" = "tomato",
+                               "positive" = "seagreen")) +
+  scale_y_continuous(
+    labels = scales::comma,
+    expand = expansion(mult = c(0, 0.15))
+  ) +
+  labs(title = "Sentiment Distribution Using Bing",
+       x = "Sentiment",
+       y = "Number of Words") +
+  theme_minimal()
+```
+
+The Bing lexicon identified a total of 111,564 sentiment-related word occurrences. Positive words account for 73.12% (81,573), while negative words account for 26.88% (29,991). Positive words occur approximately 2.7 times more often than negative words. These results suggest that customers generally use positive language when describing skincare products. However, these percentages represent word frequencies rather than the percentage of positive or negative reviews.
+
+#### 4.3.5.3 Calculate Net Sentiment per Review
+
+I will calculate a net sentiment score for each customer review by subtracting the number of negative words from the number of positive words.\
+- Positive score: Positive sentiment\
+- Negative score: Negative sentiment\
+- Zero score: Neutral sentiment
+
+```{r}
+bing_review_scores <- sephora_bing %>%
+  count(review_id, sentiment) %>%
+  pivot_wider(names_from = sentiment,
+              values_from = n,
+              values_fill = 0) %>%
+  right_join(
+    sephora_clean %>% select(review_id, rating_value),
+    by = "review_id"
+  ) %>%
+  mutate(
+    positive = replace_na(positive, 0),
+    negative = replace_na(negative, 0),
+    net_sentiment = positive - negative,
+    sentiment_class = case_when(
+      net_sentiment > 0 ~ "Positive",
+      net_sentiment < 0 ~ "Negative",
+      TRUE ~ "Neutral"
+    )
+  )
+
+head(bing_review_scores, 10)
+```
+
+The net sentiment scores show the difference between positive and negative word counts in each review. For example, a review with eight positive words and no negative words has a net sentiment score of 8. However, some sentiment scores do not match customer ratings. One review with a four-star rating has a negative sentiment score of -2, while another review with a one-star rating has a positive sentiment score of 2. These examples show that the Bing lexicon may not always capture the actual meaning of customer reviews.
+
+#### 4.3.5.4 Visualize Review-Level Sentiment
+
+I will calculate the number and percentage of positive, negative, and neutral reviews based on their net sentiment scores. I will also create a bar chart to visualize the sentiment distribution at the review level.
+
+```{r}
+bing_review_summary <- bing_review_scores %>%
+  count(sentiment_class) %>%
+  mutate(percentage = round(n / sum(n) * 100, 2))
+
+bing_review_summary
+```
+
+```{r}
+ggplot(bing_review_summary,
+       aes(x = sentiment_class, y = n, fill = sentiment_class)) +
+  geom_col(show.legend = FALSE, width = 0.6) +
+  geom_text(aes(label = paste0(scales::comma(n),
+                               "\n(", percentage, "%)")),
+            vjust = -0.5, size = 3.5) +
+  scale_fill_manual(values = c("Negative" = "tomato",
+                               "Neutral" = "gray60",
+                               "Positive" = "seagreen")) +
+  scale_y_continuous(
+    labels = scales::comma,
+    expand = expansion(mult = c(0, 0.15))
+  ) +
+  labs(title = "Review-Level Sentiment Distribution Using Bing",
+       x = "Sentiment",
+       y = "Number of Reviews") +
+  theme_minimal()
+```
+
+The Bing lexicon classified 75.34% (13,980) of customer reviews as positive, 14.85% (2,756) as negative, and 9.81% (1,820) as neutral. These results suggest that most customers express positive opinions about Sephora skincare products. This finding is also consistent with the previous word-level analysis, where positive words were more common than negative words.
+
+### 4.3.6 Sentiment Analysis Using AFINN
+
+#### 4.3.6.1 Assign Sentiment Scores to Words
+
+I will use the AFINN sentiment lexicon to assign numerical sentiment scores to words in Sephora customer reviews. Unlike the Bing lexicon, AFINN measures both the direction and intensity of sentiment.
+
+```{r}
+sephora_afinn <- sephora_words %>%
+  inner_join(get_sentiments("afinn"),
+             by = "word",
+             relationship = "many-to-many")
+
+dim(sephora_afinn)
+
+head(sephora_afinn, 10)
+```
+
+The AFINN lexicon assigned numerical sentiment scores to words in Sephora customer reviews. For example, "hate" has a score of -3, while "miss" has a score of -2. Positive words such as "like," "great," and "amazing" have scores of 2, 3, and 4, respectively. Unlike the Bing lexicon, AFINN captures different levels of sentiment intensity. This provides a more detailed understanding of the emotional language used in customer reviews.
+
+#### 4.3.6.2 Examine and Visualize Sentiment Scores
+
+I will examine the frequency and percentage of each AFINN sentiment score to understand the distribution of positive and negative sentiment in customer reviews.
+
+```{r}
+afinn_summary <- sephora_afinn %>%
+  count(value) %>%
+  mutate(percentage = round(n / sum(n) * 100, 2))
+
+afinn_summary
+```
+
+I will create a bar chart to visualize the frequency of each sentiment score. Negative scores will be shown in red, and positive scores will be shown in green.
+
+```{r}
+ggplot(afinn_summary,
+       aes(x = factor(value), y = n, fill = value > 0)) +
+  geom_col(show.legend = FALSE, width = 0.7) +
+  geom_text(aes(label = scales::comma(n)),
+            vjust = -0.5, size = 3.5) +
+  scale_fill_manual(values = c("FALSE" = "tomato",
+                               "TRUE" = "seagreen")) +
+  scale_y_continuous(
+    labels = scales::comma,
+    expand = expansion(mult = c(0, 0.15))
+  ) +
+  labs(title = "Sentiment Score Distribution Using AFINN",
+       x = "Sentiment Score",
+       y = "Number of Words") +
+  theme_minimal()
+```
+
+The results show that positive sentiment scores are more common than negative scores. The most frequent sentiment score is +2 (31.70%), followed by +3 (30.70%). Among negative scores, -2 is the most common (8.06%). Extremely positive (+5) and extremely negative (-4) scores are very rare. These results suggest that customers frequently use moderately positive language when describing skincare products. This finding is also consistent with the Bing sentiment analysis.
+
+#### 4.3.6.3 Calculate Net Sentiment per Review
+
+I will calculate the net sentiment score for each customer review by adding the AFINN scores of individual words. Based on the total score, I will classify each review as positive, negative, or neutral.
+
+```{r}
+afinn_review_scores <- sephora_afinn %>%
+  group_by(review_id) %>%
+  summarise(net_sentiment = sum(value), .groups = "drop") %>%
+  right_join(
+    sephora_clean %>% select(review_id, rating_value),
+    by = "review_id"
+  ) %>%
+  mutate(
+    net_sentiment = replace_na(net_sentiment, 0),
+    sentiment_class = case_when(
+      net_sentiment > 0 ~ "Positive",
+      net_sentiment < 0 ~ "Negative",
+      TRUE ~ "Neutral"
+    )
+  )
+
+head(afinn_review_scores, 10)
+```
+
+The net sentiment scores show the overall sentiment intensity of each customer review. For example, a five-star review has a net sentiment score of 15, indicating strong positive sentiment. However, a one-star review has a positive sentiment score of 4. Also, review 12187279 was classified as negative by Bing but positive by AFINN. These differences show that different sentiment lexicons can produce different results for the same review.
+
+#### 4.3.6.4 Visualize Review-Level Sentiment
+
+I will calculate the number and percentage of positive, negative, and neutral reviews based on their AFINN sentiment scores. I will also visualize the results using a bar chart.
+
+```{r}
+afinn_review_summary <- afinn_review_scores %>%
+  count(sentiment_class) %>%
+  mutate(percentage = round(n / sum(n) * 100, 2))
+
+afinn_review_summary
+```
+
+```{r}
+ggplot(afinn_review_summary,
+       aes(x = sentiment_class, y = n, fill = sentiment_class)) +
+  geom_col(show.legend = FALSE, width = 0.6) +
+  geom_text(aes(label = paste0(scales::comma(n),
+                               "\n(", percentage, "%)")),
+            vjust = -0.5, size = 3.5) +
+  scale_fill_manual(values = c("Negative" = "tomato",
+                               "Neutral" = "gray60",
+                               "Positive" = "seagreen")) +
+  scale_y_continuous(
+    labels = scales::comma,
+    expand = expansion(mult = c(0, 0.15))
+  ) +
+  labs(title = "Review-Level Sentiment Distribution Using AFINN",
+       x = "Sentiment",
+       y = "Number of Reviews") +
+  theme_minimal()
+```
+
+The AFINN lexicon classified 82.74% (15,353) of customer reviews as positive, 11.12% (2,063) as negative, and 6.14% (1,140) as neutral. Compared to Bing, AFINN classified more reviews as positive and fewer reviews as negative or neutral. However, both lexicons show that positive sentiment is dominant in Sephora customer reviews.
+
+### 4.3.7 Sentiment Analysis Using NRC
+
+#### 4.3.7.1 Identify Sentiment and Emotion Categories
+
+I will use the NRC sentiment lexicon to identify different emotions in Sephora customer reviews. Unlike Bing and AFINN, NRC provides more detailed emotion categories in addition to positive and negative sentiment.
+
+```{r}
+sephora_nrc <- sephora_words %>%
+  inner_join(get_sentiments("nrc"),
+             by = "word",
+             relationship = "many-to-many")
+
+dim(sephora_nrc)
+
+head(sephora_nrc, 10)
+```
+
+The NRC lexicon successfully matched words in Sephora customer reviews with different sentiment and emotion categories. For example, the word "balm" is associated with anticipation, joy, negative, and positive sentiments. The word "nauseous" is associated with disgust, negative sentiment, and sadness. These examples show that a single word can belong to multiple emotion categories. Unlike Bing and AFINN, NRC allows us to explore a wider range of emotions in customer reviews.
+
+#### 4.3.7.2 Examine and Visualize Emotion Distribution
+
+I will calculate the frequency and percentage of each sentiment and emotion category to identify the most common emotions in customer reviews.
+
+```{r}
+nrc_summary <- sephora_nrc %>%
+  count(sentiment, sort = TRUE) %>%
+  mutate(percentage = round(n / sum(n) * 100, 2))
+
+nrc_summary
+```
+
+I will create a bar chart to compare the frequency of sentiment and emotion categories identified by the NRC lexicon.
+
+```{r}
+ggplot(nrc_summary,
+       aes(x = n, y = reorder(sentiment, n),
+           fill = sentiment)) +
+  geom_col(show.legend = FALSE) +
+  geom_text(aes(label = scales::comma(n)),
+            hjust = -0.2, size = 3.5) +
+  scale_x_continuous(
+    labels = scales::comma,
+    expand = expansion(mult = c(0, 0.15))
+  ) +
+  labs(title = "Sentiment and Emotion Distribution Using NRC",
+       x = "Word Frequency",
+       y = "Sentiment and Emotion") +
+  theme_minimal()
+```
+
+Positive sentiment is the most frequent category, with 61,622 occurrences (25.69%), while negative sentiment accounts for 23,364 occurrences (9.74%). Among the eight emotion categories, joy (14.02%), trust (13.03%), and anticipation (10.86%) are the most common. Fear (4.34%) is the least common emotion. These results suggest that positive emotions are more common in Sephora customer reviews. This finding is consistent with the Bing and AFINN analyses.
+
+#### 4.3.7.3 Calculate Net Sentiment per Review
+
+I will calculate a net sentiment score for each customer review using the positive and negative categories of the NRC lexicon. The other eight emotion categories will not be included in this calculation.
+
+```{r}
+nrc_review_scores <- sephora_nrc %>%
+  filter(sentiment %in% c("positive", "negative")) %>%
+  count(review_id, sentiment) %>%
+  pivot_wider(names_from = sentiment,
+              values_from = n,
+              values_fill = 0) %>%
+  right_join(
+    sephora_clean %>% select(review_id, rating_value),
+    by = "review_id"
+  ) %>%
+  mutate(
+    positive = replace_na(positive, 0),
+    negative = replace_na(negative, 0),
+    net_sentiment = positive - negative,
+    sentiment_class = case_when(
+      net_sentiment > 0 ~ "Positive",
+      net_sentiment < 0 ~ "Negative",
+      TRUE ~ "Neutral"
+    )
+  )
+
+head(nrc_review_scores, 10)
+```
+
+The NRC lexicon classified customer reviews based on the difference between positive and negative word counts. For example, review 9176823 has seven positive words and no negative words, resulting in a net sentiment score of 7. Review 12187279 was classified as negative by both Bing and NRC but positive by AFINN. Additionally, a one-star review received a positive sentiment score of 2. These results show that different lexicons may produce different sentiment classifications for the same review.
+
+#### 4.3.7.4 Visualize Review-Level Sentiment
+
+I will calculate the number and percentage of positive, negative, and neutral reviews based on NRC sentiment scores. I will also create a bar chart to visualize the results.
+
+```{r}
+nrc_review_summary <- nrc_review_scores %>%
+  count(sentiment_class) %>%
+  mutate(percentage = round(n / sum(n) * 100, 2))
+
+nrc_review_summary
+```
+
+```{r}
+ggplot(nrc_review_summary,
+       aes(x = sentiment_class, y = n, fill = sentiment_class)) +
+  geom_col(show.legend = FALSE, width = 0.6) +
+  geom_text(aes(label = paste0(scales::comma(n),
+                               "\n(", percentage, "%)")),
+            vjust = -0.5, size = 3.5) +
+  scale_fill_manual(values = c("Negative" = "tomato",
+                               "Neutral" = "gray60",
+                               "Positive" = "seagreen")) +
+  scale_y_continuous(
+    labels = scales::comma,
+    expand = expansion(mult = c(0, 0.15))
+  ) +
+  labs(title = "Review-Level Sentiment Distribution Using NRC",
+       x = "Sentiment",
+       y = "Number of Reviews") +
+  theme_minimal()
+```
+
+The NRC lexicon classified 70.07% (13,003) of customer reviews as positive, 14.60% (2,709) as negative, and 15.33% (2,844) as neutral. Compared to Bing and AFINN, NRC classified fewer reviews as positive and more reviews as neutral. However, all three lexicons show that positive sentiment is dominant in Sephora customer reviews.
+
+### 4.3.8 Sentiment Analysis Using SentiWordNet
+
+#### 4.3.8.1 Load the SentiWordNet Lexicon
+
+I will use SentiWordNet as an additional sentiment lexicon to extend the original analysis. SentiWordNet provides numerical sentiment scores that indicate the direction and intensity of sentiment. I will compare its results with those of Bing, AFINN, and NRC to understand how different lexicons classify customer reviews.
+
+```{r}
+sentiwordnet <- lexicon::hash_sentiment_sentiword
+
+dim(sentiwordnet)
+
+head(sentiwordnet, 10)
+
+colnames(sentiwordnet)
+
+summary(sentiwordnet)
+```
+
+The SentiWordNet lexicon contains 20,093 unique entries and two columns. The first column (`x`) contains words and phrases, while the second column (`y`) contains numerical sentiment scores ranging from -1 to +1. Negative values represent negative sentiment, and positive values represent positive sentiment. Unlike AFINN, SentiWordNet uses decimal values to represent sentiment intensity.
+
+#### 4.3.8.2 Assign Sentiment Scores to Words
+
+I will match words in Sephora customer reviews with the SentiWordNet lexicon to assign numerical sentiment scores to individual words.
+
+```{r}
+sephora_sentiwordnet <- sephora_words %>%
+  inner_join(
+    sentiwordnet %>%
+      as_tibble() %>%
+      rename(word = x, value = y),
+    by = "word",
+    relationship = "many-to-many"
+  )
+
+dim(sephora_sentiwordnet)
+head(sephora_sentiwordnet, 10)
+```
+
+The SentiWordNet lexicon matched 253,267 word occurrences, representing approximately 24.79% of all word tokens in the dataset. For example, "nauseous" received a negative score of -0.50, while "feel" and "consistency" received positive scores of 0.125. However, common words such as "just," "opinion," and "scent" also received sentiment scores, even though they may be neutral in customer reviews. This shows that SentiWordNet may not always capture the meaning of words in the skincare context.
+
+#### 4.3.8.3 Examine and Visualize Sentiment Distribution
+
+I will classify the matched words as positive, negative, or neutral based on their numerical sentiment scores. Then, I will calculate the frequency and percentage of each sentiment category.
+
+```{r}
+sentiwordnet_summary <- sephora_sentiwordnet %>%
+  mutate(sentiment = case_when(
+    value > 0 ~ "positive",
+    value < 0 ~ "negative",
+    TRUE ~ "neutral"
+  )) %>%
+  count(sentiment) %>%
+  mutate(percentage = round(n / sum(n) * 100, 2))
+
+sentiwordnet_summary
+```
+
+I will create a bar chart to compare the frequency and percentage of positive, negative, and neutral words identified by SentiWordNet.
+
+```{r}
+ggplot(sentiwordnet_summary,
+       aes(x = sentiment, y = n, fill = sentiment)) +
+  geom_col(show.legend = FALSE, width = 0.6) +
+  geom_text(aes(label = paste0(scales::comma(n),
+                               "\n(", percentage, "%)")),
+            vjust = -0.5, size = 3.5) +
+  scale_fill_manual(values = c("negative" = "tomato",
+                               "neutral" = "gray60",
+                               "positive" = "seagreen")) +
+  scale_y_continuous(
+    labels = scales::comma,
+    expand = expansion(mult = c(0, 0.15))
+  ) +
+  labs(title = "Sentiment Distribution Using SentiWordNet",
+       x = "Sentiment",
+       y = "Number of Words") +
+  theme_minimal()
+```
+
+The SentiWordNet lexicon classified 58.53% (148,226) of matched word occurrences as positive, 40.00% (101,318) as negative, and 1.47% (3,723) as neutral. Although positive words were more common, a substantial percentage of matched words received negative scores. These results differ from those of the other lexicons, possibly because they use different vocabularies and scoring methods.
+
+#### 4.3.8.4 Calculate Net Sentiment per Review
+
+I will calculate the net sentiment score for each customer review by adding the SentiWordNet scores of individual words. Based on the total score, I will classify each review as positive, negative, or neutral.
+
+```{r}
+sentiwordnet_review_scores <- sephora_sentiwordnet %>%
+  group_by(review_id) %>%
+  summarise(net_sentiment = sum(value), .groups = "drop") %>%
+  right_join(
+    sephora_clean %>% select(review_id, rating_value),
+    by = "review_id"
+  ) %>%
+  mutate(
+    net_sentiment = round(replace_na(net_sentiment, 0), 10),
+    sentiment_class = case_when(
+      net_sentiment > 0 ~ "Positive",
+      net_sentiment < 0 ~ "Negative",
+      TRUE ~ "Neutral"
+    )
+  )
+
+head(sentiwordnet_review_scores, 10)
+```
+
+The SentiWordNet lexicon produced both positive and negative sentiment scores for customer reviews. For example, review 53640081 has a positive sentiment score of 2.53 and a five-star rating. However, reviews 21967962 and 56803865 received negative sentiment scores despite having five-star ratings. Both reviews were classified as positive by Bing, AFINN, and NRC. These differences show that the vocabulary and scoring methods of different lexicons can affect sentiment classification.
+
+#### 4.3.8.5 Visualize Review-Level Sentiment
+
+I will calculate the number and percentage of positive, negative, and neutral reviews based on SentiWordNet sentiment scores. I will also create a bar chart to visualize the results.
+
+```{r}
+sentiwordnet_review_summary <- sentiwordnet_review_scores %>%
+  count(sentiment_class) %>%
+  mutate(percentage = round(n / sum(n) * 100, 2))
+
+sentiwordnet_review_summary
+```
+
+```{r}
+ggplot(sentiwordnet_review_summary,
+       aes(x = sentiment_class, y = n, fill = sentiment_class)) +
+  geom_col(show.legend = FALSE, width = 0.6) +
+  geom_text(aes(label = paste0(scales::comma(n),
+                               "\n(", percentage, "%)")),
+            vjust = -0.5, size = 3.5) +
+  scale_fill_manual(values = c("Negative" = "tomato",
+                               "Neutral" = "gray60",
+                               "Positive" = "seagreen")) +
+  scale_y_continuous(
+    labels = scales::comma,
+    expand = expansion(mult = c(0, 0.15))
+  ) +
+  labs(title = "Review-Level Sentiment Distribution Using SentiWordNet",
+       x = "Sentiment",
+       y = "Number of Reviews") +
+  theme_minimal()
+```
+
+The SentiWordNet lexicon classified 65.67% (12,185) of customer reviews as positive, 33.53% (6,222) as negative, and 0.80% (149) as neutral. Compared to the other three lexicons, SentiWordNet classified the highest percentage of reviews as negative and the lowest percentage as neutral. These differences may be related to its broader vocabulary and numerical scoring method. However, positive sentiment remains the most common category across all four lexicons.
+
+### 4.3.9 Comparison of Sentiment Lexicons
+
+I will combine the sentiment analysis results from Bing, AFINN, NRC, and SentiWordNet into a single dataset. This will help me compare how each lexicon classifies the same customer reviews.
+
+```{r}
+lexicon_comparison <- bind_rows(
+  bing_review_summary %>% mutate(lexicon = "Bing"),
+  afinn_review_summary %>% mutate(lexicon = "AFINN"),
+  nrc_review_summary %>% mutate(lexicon = "NRC"),
+  sentiwordnet_review_summary %>% mutate(lexicon = "SentiWordNet")
+) %>%
+  select(lexicon, sentiment_class, n, percentage)
+
+print(lexicon_comparison, n = Inf)
+```
+
+I will create a grouped bar chart to compare the percentage of positive, negative, and neutral reviews across the four sentiment lexicons.
+
+```{r}
+ggplot(lexicon_comparison,
+       aes(x = lexicon, y = percentage,
+           fill = sentiment_class)) +
+  geom_col(position = position_dodge(width = 0.8),
+           width = 0.7) +
+  geom_text(aes(label = paste0(percentage, "%")),
+            position = position_dodge(width = 0.8),
+            vjust = -0.5, size = 3) +
+  scale_fill_manual(values = c("Negative" = "tomato",
+                               "Neutral" = "gray60",
+                               "Positive" = "seagreen")) +
+  scale_y_continuous(
+    expand = expansion(mult = c(0, 0.15))
+  ) +
+  labs(title = "Comparison of Four Sentiment Lexicons",
+       x = "Sentiment Lexicon",
+       y = "Percentage of Reviews (%)",
+       fill = "Sentiment") +
+  theme_minimal()
+```
+
+All four sentiment lexicons classified most customer reviews as positive. AFINN has the highest percentage of positive reviews (82.74%), while SentiWordNet has the lowest (65.67%). SentiWordNet also has the highest percentage of negative reviews (33.53%), while NRC has the highest percentage of neutral reviews (15.33%). These differences show that vocabulary coverage and scoring methods can affect sentiment analysis results, even when the same dataset is used.
+
+### 4.3.10 Comparison with the Original Example
+
+The original example in Chapter 2 of Text Mining with R uses Jane Austen's novels to explore sentiment in literary texts. In this study, I used Sephora skincare reviews to explore sentiment in customer feedback.
+
+| Feature | Original Example | Extended Analysis |
+|----|----|----|
+| Dataset | Jane Austen's novels | Sephora skincare reviews |
+| Text type | Literary text | Customer reviews |
+| Sentiment lexicons | Bing, AFINN, NRC | Bing, AFINN, NRC, SentiWordNet |
+| Analysis level | Words, text sections, and chapters | Words and individual reviews |
+| Main purpose | Understand sentiment in literary texts | Understand customer opinions |
+
+Both analyses use similar text mining techniques, such as tokenization, sentiment classification, word frequency analysis, and visualization. However, the original example examines how sentiment changes throughout novels, while the extended analysis examines the distribution of positive, negative, and neutral customer reviews.
+
+I also introduced SentiWordNet as an additional sentiment lexicon. All four lexicons classified most customer reviews as positive. However, AFINN identified the highest percentage of positive reviews, while SentiWordNet identified the highest percentage of negative reviews.
+
+Both analyses show that different sentiment lexicons can produce different results for the same text. These differences highlight the importance of vocabulary coverage, scoring methods, and text context in sentiment analysis.
+
+# 5. Conclusion
+
+In this study, I reproduced the sentiment analysis examples from Chapter 2 of Text Mining with R and extended the original analysis using a different text dataset and an additional sentiment lexicon.
+
+After data cleaning, I analyzed 18,556 Sephora customer reviews using Bing, AFINN, NRC, and SentiWordNet. All four lexicons classified most customer reviews as positive. However, AFINN identified the highest percentage of positive reviews (82.74%), while SentiWordNet identified the highest percentage of negative reviews (33.53%). NRC identified the highest percentage of neutral reviews (15.33%).
+
+The original analysis focused on sentiment changes throughout Jane Austen's novels, while my analysis focused on customer opinions about skincare products. Adding SentiWordNet showed how differences in vocabulary coverage and scoring methods can affect sentiment classification.
+
+One limitation of this study is that lexicon-based methods may not fully understand context, negation, sarcasm, or skincare-specific terms.
+
+Overall, this study shows that sentiment analysis can be applied to different types of text data and that the choice of sentiment lexicon can significantly affect the results.
+
+# 6. References & Citation
+
+Silge, J., & Robinson, D. (2017). Text Mining with R: A Tidy Approach. O'Reilly Media.\
+<https://www.tidytextmining.com/sentiment>
+
+Messier, N. Sephora Skincare Reviews and Sentiment. Kaggle.\
+<https://www.kaggle.com/datasets/natashamessier/sephora-skincare-reviews-and-sentiment>
+
+I used ChatGPT (GPT-5.6 Luna), developed by OpenAI, to help me understand some of the functions I used in this assignment and to check my work.
+
+OpenAI. (2026). ChatGPT (GPT-5.6 Luna) \[Large language model\]. \[<https://chatgpt.com/> Accessed November 15, 2026\].
