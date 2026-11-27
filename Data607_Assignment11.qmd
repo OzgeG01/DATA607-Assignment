@@ -1,0 +1,27 @@
+---
+title: "Personalized Movie Recommendation System"
+author: "Ozge Gundogan"
+date: 2026-11-26
+format: html
+editor: visual
+---
+
+# 1. Introduction
+
+In this assignment, I will build a personalized movie recommendation system using survey data. The dataset contains ratings from 10 users for 6 movies. Some ratings are missing because not every user has rated every movie.
+
+In the previous assignment, I used the Global Baseline Estimate (GBE) method to predict missing ratings. However, this method did not provide personalized recommendations.
+
+For this assignment, I will use Item-Based Collaborative Filtering to recommend movies based on each user's preferences. I will also evaluate the model using RMSE and MAE to measure how accurately it predicts movie ratings.
+
+# 2. Planned Approach
+
+First, I will import the movie ratings dataset from GitHub and explore the data. I will check the number of users, movies, available ratings, and missing values.
+
+Next, I will create a user-movie rating matrix and calculate movie similarities using Cosine Similarity. I will use these similarities and each user's previous ratings to predict missing ratings and generate personalized recommendations.
+
+Finally, I will divide the available ratings into 80% training data and 20% test data. I will build the model using the training data and compare its predictions with the actual ratings in the test data. I will use RMSE and MAE to evaluate the model's performance.
+
+# 3. Anticipated Challenges
+
+One challenge is the small dataset, which contains only 10 users and 6 movies. This may make it difficult to identify strong similarities between movies. Another challenge is that many users gave high ratings to the movies. This may produce high similarity scores and make the predictions very close to each other.
