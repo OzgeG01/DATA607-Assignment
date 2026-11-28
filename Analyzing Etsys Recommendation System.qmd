@@ -1,0 +1,161 @@
+---
+title: "Analyzing Etsy’s Recommendation System"
+author: "Ozge Gundogan"
+date: 2026-11-27
+format: html
+editor: visual
+---
+
+# 1. Introduction
+
+Etsy is an online marketplace that connects independent sellers with buyers. With more than 100 million unique listings, Etsy uses a recommendation system to help customers discover relevant products (Etsy, 2025). As an Etsy seller, I selected this platform to better understand how recommendations influence product visibility and sales. In this report, I will analyze Etsy’s recommendation system from buyer, seller, and organization perspectives, examine how it works, and propose improvements based on two official Etsy sources.
+
+# 2. Scenario Design Analysis
+
+Scenario Design focuses on identifying target users, understanding their goals, and determining how a system can help them achieve those goals. Since Etsy connects buyers and independent sellers, I analyzed its recommendation system from three perspectives.
+
+| Scenario Design Questions | Buyer Perspective | Seller Perspective | Organization Perspective |
+|------------------|------------------|------------------|------------------|
+| Who are the target users? | New and returning customers looking for unique and personalized products. | Independent sellers, small businesses, artists, and digital product creators. | Etsy’s management, marketing, product development, and technical teams. |
+| What are their key goals? | Find relevant and affordable products, discover unique items, and save time. | Increase product visibility, reach potential customers, increase sales, and build customer loyalty. | Increase revenue, customer satisfaction, user engagement, and operational efficiency. |
+| How can the recommendation system help them accomplish those goals? | Provide personalized recommendations based on browsing history, purchases, favorites, and current interests. | Connect sellers with relevant buyers and improve product discovery and visibility. | Encourage repeat visits and purchases while improving recommendation quality and efficiency through shared machine learning models. |
+
+These three perspectives are closely connected. Etsy’s recommendation system should balance customer satisfaction, seller visibility, and business performance.
+
+# 3. Reverse Engineering
+
+To understand Etsy’s recommendation system, I examined its user interface and two official Etsy sources. Although the complete implementation is not publicly available, these sources provide information about its recommendation methods and architecture.
+
+## 3.1 User Interface Analysis
+
+I examined a handmade cherry cardigan priced at \$315.23 and observed three recommendation sections.
+
+![](etsy_product.png){width="60%"}
+
+**You may also like:** Etsy recommended cardigans with similar designs, colors, and styles, suggesting the possible use of content-based filtering. This section also included sponsored listings, which may follow different ranking mechanisms.
+
+![](etsy_similar.png){width="85%"}
+
+**Shoppers with similar taste loved these:** Etsy recommended various knitted products and digital crochet patterns, suggesting the possible use of collaborative filtering.
+
+![](etsy_shoppers.png){width="85%"}
+
+**Explore related searches:** Etsy suggested related search terms, indicating the possible use of keywords, product attributes, and search patterns.
+
+![](etsy_searches.png){width="85%"}
+
+These observations suggest a hybrid recommendation approach. However, the exact algorithms cannot be confirmed through the user interface alone.
+
+## 3.2 Data and Features
+
+According to Etsy (2025), its recommendation system uses four main feature categories.
+
+| Feature Category | Examples |
+|-------------------------|-----------------------------------------------|
+| Listing Features | Price, images, shipping, product attributes, and shop quality |
+| User Features | Interests, location, search history, and previous interactions |
+| Real-Time Features | Recently viewed products, searches, and categories |
+| Time-Based Features | Hour, day, and month |
+
+Etsy also uses implicit feedback from customer interactions to understand user preferences.
+
+## 3.3 Recommendation Process
+
+Etsy’s recommendation process consists of two main stages:
+
+\- Candidate Selection: Identifies potentially relevant products from the marketplace.\
+- Candidate Ranking: Evaluates and ranks selected products using a machine learning model.
+
+This approach helps Etsy manage its large product catalog efficiently.
+
+## 3.4 Multi-Task Canonical Ranker
+
+Etsy developed a shared ranking model called the Multi-Task Canonical Ranker to support multiple recommendation modules and reduce the cost of maintaining separate models. The model uses a Multi-gate Mixture of Experts (MMoE) neural network architecture to predict two outcomes:
+
+\- Probability of favoriting a product.\
+- Probability of purchasing a product.
+
+These predictions are combined into a final ranking score to balance customer engagement and sales. Etsy also uses favorite rates as an indirect measure of revisit frequency (Pan & Louca, 2023).
+
+## 3.5 Model Evaluation
+
+Etsy evaluated its model through offline testing and online experiments. In the second quarter of 2022, Etsy reported an improvement of up to 12.5% in module-based favorite NDCG, along with improvements in purchase and engagement metrics (Pan & Louca, 2023).
+
+Normalized Discounted Cumulative Gain (NDCG) is a metric used to evaluate ranking quality by giving greater importance to relevant items appearing at higher positions.
+
+However, since the technical article was published in 2023, the exact implementation of Etsy’s current recommendation system remains uncertain.
+
+```{mermaid}
+flowchart TD
+    A[Etsy Product Catalog] --> B[Candidate Selection]
+    B --> C[Multi-Task Canonical Ranker]
+
+    F1[Listing Features] --> C
+    F2[User Features] --> C
+    F3[Real-Time Features] --> C
+    F4[Time-Based Features] --> C
+
+    C --> D[Favorite Probability]
+    C --> E[Purchase Probability]
+
+    D --> F[Final Ranking Score]
+    E --> F
+
+    F --> G[Personalized Recommendations]
+```
+
+*Simplified illustration of Etsy’s recommendation process and multi-task canonical ranker based on Pan and Louca (2023) and Etsy (2025).*
+
+# 4. Strengths and Limitations
+
+## 4.1 Strengths
+
+\- Personalization: Recommendations based on user behavior.\
+- Scalability: Efficient management of a large product catalog.\
+- Multi-Task Learning: Balancing customer engagement and sales.\
+- Computational Efficiency: Reduced maintenance costs through shared models.\
+- Context Awareness: Recommendations based on real-time user activities.\
+- Consistency: A more consistent user experience across platforms.
+
+## 4.2 Limitations
+
+\- Cold Start Problem: Limited interaction data for new users and products.\
+- Popularity Bias: Greater visibility for popular products.\
+- Filter Bubble: Limited exposure to different products and categories.\
+- Implicit Feedback Accuracy: User interactions may not reflect actual preferences.\
+- Limited Transparency: Incomplete public information about ranking algorithms.\
+- Privacy Concerns: Collection and analysis of customer behavior.
+
+These limitations represent potential challenges rather than confirmed problems within Etsy’s current recommendation system.
+
+# 5. Recommendations for Improvement
+
+Based on my analysis, I propose the following improvements to Etsy’s recommendation system:
+
+- **Address the Cold Start Problem:** Use product descriptions, images, and categories to recommend new products. Offer an optional questionnaire to understand new customers’ interests and budgets.
+
+- **Reduce Popularity Bias:** Allocate some recommendation spaces to relevant products from new and less-established sellers.
+
+- **Increase Recommendation Diversity:** Recommend products from different shops, categories, styles, and price ranges to reduce filter bubbles.
+
+- **Improve User Feedback:** Expand existing feedback mechanisms by adding options such as “Not interested,” “Too expensive,” and “Show me more products like this.”
+
+- **Increase Algorithm Transparency:** Provide simple explanations showing why products are recommended, such as "Based on your recent searches."
+
+- **Improve Privacy and User Control:** Expand existing privacy controls by allowing customers to manage their interests, exclude specific product categories, and fully reset personalized recommendations.
+
+- **Evaluate Long-Term Performance:** Measure customer satisfaction, recommendation diversity, new seller exposure, and customer retention. Use A/B testing to evaluate the effectiveness of these improvements.
+
+Etsy should balance recommendation accuracy, customer satisfaction, seller visibility, and long-term business performance.
+
+# 6. Conclusion
+
+In this report, I analyzed Etsy’s recommendation system from buyer, seller, and organization perspectives. Although the system provides personalized and efficient recommendations, it faces potential challenges such as popularity bias, the cold start problem, and privacy concerns. As an Etsy seller, I believe that an effective recommendation system should help customers discover unique products, provide fair opportunities for independent sellers, and support long-term business growth.
+
+# 7. References
+
+Etsy. (2025, October 16). Search, advertisement & recommendation ranking disclosures.\
+<https://www.etsy.com/legal/policy/search-advertisement-recommendation/899478564529>
+
+Pan, Y., & Louca, R. (2023, April 18). How we built a multi-task canonical ranker for recommendations at Etsy. Etsy Code as Craft.\
+<https://www.etsy.com/codeascraft/how-we-built-a-multi-task-canonical-ranker-for-recommendations-at-etsy>
